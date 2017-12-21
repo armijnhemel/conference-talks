@@ -1,0 +1,334 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{Simplifying compliance by trusting upstream}
+\date{May 30, 2013}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item volunteer at \url{gpl-violations.org}
+\item Tjaldur Software Governance Solutions since May 2011
+\item Binary Analysis Tool
+\end{itemize}
+}
+
+\frame{
+\frametitle{Current day issues in consumer electronics}
+
+There are plenty of GPL license issues in current day consumer electronics:
+
+\begin{itemize}
+\item no source code
+\item partial source code
+\item wrong source code
+\item no license text/written offers
+\end{itemize}
+
+This has lead to license enforcement in various countries (Germany, France, US).
+}
+
+\frame{
+\frametitle{Origin of license issues: supply chain}
+Supply chains can be long: multiple companies are involved in creating a single product.
+
+ODMs and (some) chipset vendors are notoriously sloppy: code (source \textit{and} binary) is pulled from many places (upstream projects, other suppliers, homebrew) and distributed without verifying license compliance.
+
+Various reasons:
+
+\begin{itemize}
+\item market pressure
+\item time to market
+\item ignorance
+\item ``competitive advantage''
+\item low chance of getting caught
+\end{itemize}
+}
+
+\frame{
+\frametitle{Trust, but verify}
+While business relationships should be built on trust it never hurts to \textit{verify}.
+
+The large amount of files in source code releases makes it hard, even impractical, to do a full source code audit in little time.
+}
+
+\frame{
+\frametitle{Some numbers}
+\begin{itemize}
+\item BusyBox 1.21.0: 1700+ files (771 C files, 97 header files)
+\item Linux kernel 2.6.32.9 (used in Android Froyo): 30,000+ files
+\item Linux kernel 3.0.31 (used in Android Jelly Bean): 36,000+ files
+\item Linux kernel 3.8.4: 41,000+ files, (17997 C files, 15041 header files, 1306 assembler files)
+\item Qt 5.0.1: 62,000+ files, (674 C files, 12013 C++ files, 12930 header files)
+\end{itemize}
+
+For an Android phone you are easily looking at millions of files in total.
+}
+
+\frame{
+\frametitle{More numbers}
+Lines of code (including comments and whitespace) in \textit{just} the C files:
+
+\begin{itemize}
+\item BusyBox 1.21.0: 255,687 lines of code
+\item Linux kernel 3.8.4: 12,165,051 lines of code
+\end{itemize}
+
+%If automated scanning would cost USD 0.001 per line: over USD 12,000 for the Linux kernel (excluding header files)
+}
+
+\frame{
+\frametitle{Learning from the LTSI project}
+At LinuxCon Europe 2011 the LTSI project was launched. It introduced the``Yaminabe project'' to detect duplicate work. Yaminabe used a supersimple algorithm:
+
+\begin{itemize}
+\item treat all known files from upstream kernel as uninteresting
+\item focus on differences
+\end{itemize}
+
+Using this method it was clear that around 95\% of sources in the kernel that vendors shipped was identical to upstream and could be ignored.
+
+This same method can also be used for compliance scanning!
+}
+
+\frame{
+\frametitle{My compliance method}
+One very simple assumption:
+
+Upstream projects (Linux kernel, BusyBox, Samba, \dots) are ``trusted'': whatever they publish is safe. Instead, focus on the files that are \textit{not} in upstream projects!
+
+This is not about finding copied code in files: use a clone detector for that. However, my approach can be used as a very effective pre-filter.
+}
+
+\frame{
+\frametitle{Why trust upstream projects?}
+
+\begin{itemize}
+\item they are the copyright holders
+\item they chose the license
+\item they can sue for copyright infringement
+\item code from upstream software projects is often used (largely) unmodified
+\end{itemize}
+
+Using releases from upstream projects as the ``reference standard'' and only looking at differences vastly simplifies compliance.
+
+Not every upstream source is trustworthy: you have to decide for yourself.
+}
+
+\frame{
+\frametitle{High trust example: Linux kernel}
+\begin{itemize}
+\item every commit is ``signed off'' by multiple developers: high levels of scrutiny
+\item for (almost) every line of code there is a very clear history
+\item code that is not clear license wise has been in the kernel for 20 years and often copyrighted by very visible developers (Linus Torvalds, Ted Ts'o, etcetera)
+\item high turnover of code: old code is gradually being replaced by code that is clearer license wise
+\end{itemize}
+}
+
+\frame{
+\frametitle{High trust example: BusyBox}
+\begin{itemize}
+\item there have been very visible legal cases about BusyBox
+\item extremely high levels of scrutiny: they cannot afford a licensing mistake themselves
+\end{itemize}
+
+Of course you still need to distribute everything license compliant.
+}
+
+\frame{
+\frametitle{High trust example: GNU project}
+\begin{itemize}
+\item there have been very visible legal cases about GNU project software
+\item extremely high levels of scrutiny: they cannot afford a licensing mistake themselves
+\item they are the ``moral standard''
+\end{itemize}
+}
+
+\frame{
+\frametitle{Low/no trust example: Maven 2 Central Repository}
+Maven is a build tool for Java, that can use repositories for storing/getting binary artefacts. The Maven 2 Central Repository is awful:
+
+\begin{itemize}
+\item used as a dumping ground for Java code
+\item tons of copies of the same code, with only slight modifications, unclear copyrights, unclear origins
+\item thousands of companies trust it blindly!
+\end{itemize}
+
+Copyright time bomb waiting to explode!
+}
+
+\frame{
+\frametitle{Others}
+
+\begin{itemize}
+\item Samba: high trust
+\item GNOME: high trust (on their own code)
+\item KDE: high trust (on their own code)
+\item OpenWrt: low trust
+\item Debian: low trust
+\item Fedora: low trust
+\end{itemize}
+
+Rule of thumb: upstream sources that repackage source code from others (like Linux distributions) should have ``low trust''. Original authors should have ``high trust''. Roles are not always clear and different situations might require different levels of trust.
+}
+
+\frame{
+\frametitle{Approach}
+
+\begin{enumerate}
+\item create a database from source code from trusted upstream. Record SHA256 checksum, plus possibly strings, function names, etcetera
+\item unpack source code archive from untrusted supplier
+\item compute SHA256 checksums for each source code file from the untrusted supplier
+\item compare to checksums in database
+\item ignore files that can be found in the database
+\item further analyse/scan the files that are different
+\end{enumerate}
+
+That's it!
+}
+
+\frame{
+\frametitle{Effectiveness}
+This turns out to be \textit{extremely} effective:
+
+\begin{itemize}
+\item scans are fast: around 10 minutes on my test machine (8 threads, SSD) for a recent kernel. This includes a license scan with Ninka and FOSSology for files that could not be found in any upstream Linux kernel version.
+\item Yaminabe project: scanning kernel releases of various Android handsets showed that between 5\% and 10\% of files of the Linux kernel differ. That is a reduction of the problem space with 90\% or more!
+\end{itemize}
+
+Audits are no longer impossible, but become very doable. I have used this successfully for multiple customers.
+}
+
+\frame{
+\frametitle{Caveats}
+
+\begin{itemize}
+\item it requires a ``leap of faith''
+\item not every upstream source is worth trusting in every circumstance
+\item creating a complete enough database of good quality is \textit{very} very time consuming
+\item database has to be kept up to date
+\item does not check for \textit{all} compliance requirements (configuration files, etcetera)
+\end{itemize}
+
+Even if you would not trust upstream code, it is a great approach to \textit{prioritize} potential issues and risks.
+}
+
+\frame{
+\frametitle{Method in practice}
+I have used this method in practice:
+
+\begin{itemize}
+\item audits for Open Source Automation Development Lab (OSADL)
+\item other customers
+\end{itemize}
+}
+
+\frame{
+\frametitle{Example case study: Linux based router}
+%Source code archive from a router (Atheros chipset) made by TP-Link, a well known Chinese router manufacturer.
+Source code archive from a router made by a well known Chinese router manufacturer.
+
+Device uses many standard components, like:
+
+\begin{itemize}
+\item Linux kernel
+\item BusyBox
+\item U-Boot
+\end{itemize}
+}
+
+\frame{
+\frametitle{Linux kernel}
+24987 files in the Linux kernel were scanned.
+
+Of those slightly over 900 (about 4\%) could not be found in any kernel downloaded from \url{kernel.org}. 7 files could be found in kernels from other sources.
+
+\begin{itemize}
+\item version numbers, id, author fields commonly from CVS/RCS metadata by Perforce (likely)
+%\item proprietary files (mostly Atheros, some TP-Link), likely problematic licensewise.
+\item proprietary files (mostly chipset manufacturer, some device manufacturer), likely problematic licensewise.
+\item actual changed source code for (perceived) bugs
+\end{itemize}
+
+Over 600 files were just changes made by version control system, meaning only a handful of files were \textit{actually} changed or new!
+}
+
+\frame{
+\frametitle{BusyBox}
+442 files were scanned, 62 (14\%) not in database:
+
+\begin{itemize}
+\item 17 files with Perforce changes
+\item (modified) copy of bridge-utils
+\item 1 proprietary chipset vendor file
+%\item 1 proprietary Atheros file
+\item 1 proprietary device manufacturer file
+%\item 1 proprietary TP-Link file
+\item changed files with patches for perceived bugs
+\end{itemize}
+}
+
+\frame{
+\frametitle{U-Boot}
+2989 files were scanned, 395 (13\%) not in database, 10 not found in official U-Boot upstream:
+
+\begin{itemize}
+\item many chipset vendor proprietary files
+%\item many Atheros proprietary files
+\item many files with Perforce changes
+\item several non-upstream files with different licenses and copyrights
+\item 1 file undistributable for commercial use
+\end{itemize}
+}
+
+\begin{frame}[fragile]
+\frametitle{Undistributable file in U-Boot in router sources}
+\texttt{u-boot/fs/jffs2/compr\_lzari.c} contains the following license:
+\begin{verbatim}
+LZARI.C (c)1989 by Haruyasu Yoshizaki, Haruhiko Okumura,
+and Kenji Rikitake.
+
+All rights reserved. Permission granted for
+non-commercial use.
+\end{verbatim}
+
+Luckily this file is not used in the binary!
+\end{frame}
+
+\frame{
+\frametitle{Tooling}
+Scripts to create database are already present in Binary Analysis Tool (BAT).
+
+Basic script to scan will be released as part of BAT 15 (already present in version control).
+
+Fancier programs with more functionality will be offered as a service.
+}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\frame{
+\frametitle{Contact}
+Any more questions? Feel free to contact me!
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}
