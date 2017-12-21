@@ -1,0 +1,349 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions}
+\title{Finding stupid vulnerabilities in binaries}
+\date{October 15, 2014}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item created original prototype for NixOS
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item owner Tjaldur Software Governance Solutions
+\item European coordinator Linux Defenders at Open Invention Network
+\end{itemize}
+}
+
+\frame{
+\frametitle{Today's topic}
+Today I will talk about trying to find \textit{obvious} security bugs in embedded devices.
+
+This will \textit{not} be about finding the next Stuxnet, but about fruit hanging so low you trip over it.
+
+Likely you will feel ripped off and a bit angry at the end of this talk as I will not be telling you anything new.
+}
+
+\frame{
+\frametitle{Recent security issues}
+Security has been a bit more on the radar recently:
+
+\begin{itemize}
+\item Heartbleed
+\item Shellshock
+\end{itemize}
+
+I can already tell you that in the embedded space there is a lot lot more out there waiting to be exploited.
+
+With more and more devices being connected the risk will only increase.
+
+Quiz (no prize): how many lightbulbs are in this room?
+}
+
+\frame{
+\frametitle{Typical embedded use case}
+\begin{enumerate}
+\item plug cables into device
+\item turn device on
+\item replace device when it breaks
+\end{enumerate}
+
+Applying updates? Often not done (buuh!), and sometimes also very difficult or even impossible (industrial controllers).
+}
+
+\frame{
+\frametitle{Supply chains}
+Supply chains in the embedded industry typically follow the ``waterfall model'': it is extremely hard to fix issues downstream (license compliance, security bugs, etc.)
+
+Bug fixes (whether it is licensing or security) are often not backported to older SDKs or chipsets and not actively pushed downstream. There seems to be very little ``after sales support'' or interest in getting old issues fixed (note: this differs per vendor).
+
+ODMs also told me that once a chipset vendor releases a new SDK they (chipset vendor) often spend months doing all kinds of tests (security does not happen to be one of them), so there is some reluctance to frequent updates.
+}
+
+\frame{
+\frametitle{Example: UPnP security bug}
+In 2006 I presented (amongst others) an exploit for certain UPnP stacks where input from the Internet was passed unchecked to \url{iptables} by \url{linux-igd}, running with full root privileges on the router.
+
+I had days of fun!
+
+\url{http://www.upnp-hacks.org/}
+}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+int pmlist_AddPortMapping (char *protocol,
+                           char *externalPort,
+                           char *internalClient,
+                           char *internalPort) {
+  char command[500];
+  sprintf(command, "%s -t nat -A %s -i %s -p %s -m mport
+      --dport %s -j DNAT --to %s:%s", g_iptables,
+      g_preroutingChainName, g_extInterfaceName, protocol,
+      externalPort, internalClient, internalPort);
+  system (command);
+  if (g_forwardRules) {
+    sprintf(command,"%s -I %s -p %s -d %s -m mport
+     --dport %s -j ACCEPT", g_iptables,g_forwardChainName,
+     protocol, internalClient, internalPort);
+    system(command);
+  }
+  return 1;
+}
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Industry responses}
+When I contacted companies responses were mixed: some companies were very responsive and engaging, others only did the bare minimum. One company told me ``this device will be EOL soon, so we are not going to act on it''.
+
+But many of the fixes were ``one off'' and (near) identical devices from other (or even the same) vendors were still vulnerable. There was no structural fix.
+
+Even though SDK vendors and ODMs fixed (some of) the bugs I discovered in later SDKs and products, there were many devices on the market for a significant period of time (years) that were still vulnerable.
+}
+
+\frame{
+\frametitle{Haven't we learned?}
+Each time Linux moves into a new space the same old errors seem to be repeated:
+
+\begin{itemize}
+\item ``../..'' path bugs
+\item environment
+\item not sanitizing input
+\item etc.
+\end{itemize}
+
+I would not be surprised if some old Unix server bugs have been reimplemented in embedded and mobile and are exploitable again. Also, what will the ``Internet of Things'', ``connected home'', etc. bring security wise?
+
+Isn't there anything we can do to raise the security bar?
+}
+
+\frame{
+\frametitle{Project: Deep Firmware Inspection}
+NCSC ( \url{http://www.ncsc.nl/} ) is the Dutch National Cyber Security Center, part of the Minstry of Justice and Safety.
+
+NLnet Foundation ( \url{http://www.nlnet.nl/} ) is a Dutch non-profit organisation funding network and security research and development.
+
+NCSC and NLnet Foundation have teamed up for the ``Deep Firmware Inspection'' (DFI) project.
+
+The goal of this project is to do more proactive scanning of firmwares of embedded devices before they are deployed.
+
+It is not about finding \textit{all} bugs or very obscure bugs, just known, obvious and preventable ones. The end goal is to become ``secure by default'' and make these devices safer for everyone.
+}
+
+\frame{
+\frametitle{DFI project hygiene}
+
+\begin{itemize}
+\item the whole project plan can be requested from the government (``Wet Openbaarheid Bestuur'')
+\item as much as possible open source components will be used and/or released as open source.
+\item to avoid software patent threats ideas will be filed as so called ``defensive publications'' (explicit statements of prior art).
+\item plans are to do as much research as possible in the open (student projects, conference papers, etc.)
+\item plans to work with upstream sources (chipset manufacturers, ODMs)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Subprojects}
+\begin{itemize}
+\item virus scanning (using ClamAV)
+\item correlating security information (for example CVE) with binary analysis
+\item (basic) source code analysis to find smells
+\item comparison of firmwares/binaries to known vulnerable firmwares/binaries
+\item analysis of encrypted ZIP files to see if known plaintext attacks are possible
+\item generate scripts vulnerability testers can follow to speed up their searches
+\item and some more
+\end{itemize}
+}
+
+\frame{
+\frametitle{Primary building block: Binary Analysis Tool}
+Binary Analysis Tool (or: BAT) is a lightweight tool under an open source license that automates binary analysis.
+
+\begin{itemize}
+\item demystify binary analysis by codifying knowledge
+\item make it easier to have reproducable results
+\item common language for binary analysis
+\end{itemize}
+
+BAT is a generic framework for binary analysis. Until now focus of BAT was primarily on software license compliance.
+
+BAT has been in development since late 2009 and getting reasonably good.
+}
+
+\frame{
+\frametitle{BAT modules}
+
+BAT is extremely modular and it comes with several modules:
+
+\begin{itemize}
+\item unpacking over 30 file systems and compressed files
+\item report on common properties (file type, size, etcetera)
+\item search for license markers and identifiers
+\item advanced string identifier search
+\item dynamic ELF linking verification
+\item kernel module analysis
+\item many more
+\end{itemize}
+
+This will be extended with security modules.
+}
+
+\frame{
+\frametitle{Analysis steps}
+Steps to determine if a binary contains particular source code:
+
+\begin{enumerate}
+\item extract binary files from blobs (firmwares, installers, etc.) recursively (if needed)
+\item extract identifiers (strings, function names, variable names, etcetera) from binary files and compare these to (publicly available) source code
+\item use other information like file names, presence of other files, package databases, etcetera, for circumstantial evidence
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Identifier search}
+BAT extracts string constants, function/method names, variable names, etcetera, from binaries and compares them with a large database of strings, function/method names, etcetera extracted from source code.
+
+Given enough data it is possible to make an educated guess of which version of a program was used (including which source code files).
+
+After finding the source code files that have been most likely used, you can correlate the information with security information.
+}
+
+\frame{
+\frametitle{Identifiers and information extracted}
+
+\begin{itemize}
+\item string constants (using \texttt{xgettext} and regular expressions for some Linux kernel code)
+\item function names (C) and method names (Java) (using \texttt{ctags})
+\item variable names and Linux kernel symbols (C), field names and class names (Java) (using \texttt{ctags})
+%\item licenses (if enabled) (using Ninka and FOSSology)
+\item Linux kernel module info (using regular expressions)
+\item various characteristics of the file (SHA256 checksum, etc.)
+\end{itemize}
+}
+
+\begin{frame}[fragile]
+\frametitle{String constant example}
+
+\begin{verbatim}
+...
+ } else {
+    printf("%s %s: status is %x, should never happen\n",
+           inst->prog, inst->device, status);
+    status = EXIT_ERROR;
+ }
+ ...
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Using security information from CVEs}
+With BAT you get a pretty accurate match of which source code files have been used to build a binary. By relating security information to source code files you can see if a binary is possibly vulnerable.
+
+Challenge: CVE information is often unstructured, so this means a lot of manual processing.
+
+A simple keyword or pattern search in binaries should also give hints of possible bugs.
+}
+
+\frame{
+\frametitle{Analysing source code to search for smells}
+The LTSI project showed that a lot of open source software is used unmodified or minimally modified (``Yami nabe project'').
+
+This makes it possible to research source code in advance and record any ``known smells'', because chances are high that the unmodified, or minimally modified version was used to create the binary.
+
+CERT has a list of known smells in the ``CERT secure coding standard'':
+
+``Do not call \texttt{system()}'' is ENV33-C in their list.
+}
+
+\frame{
+\frametitle{Comparing binaries to known vulnerable binaries}
+Because many companies use the same suppliers (down to using the same casing) the firmwares of their devices are often very similar, or identical.
+
+By recording information about vulnerable firmwares/binaries and comparing new ones (checksums, bsdiff, identifiers) to this information it will become easier to find vulnerabilities in devices that were not mentioned in for example a CVE report.
+}
+
+\frame{
+\frametitle{Analysing ZIP files to find out if KPA is possible}
+For ZIP files it is possible to do a known plaintext attack (KPA). By comparing CRC32 checksums to a database of known files it is possible to find files to (later) do a KPA.
+}
+
+\frame{
+\frametitle{Generating scripts for security audits}
+Using information from the audit it should be possible to generate a script for security testers to follow and focus their attention first to known issues to confirm any suspicions.
+}
+
+\frame{
+\frametitle{Current status}
+The project started recently, so not everything is done yet. Finished (or almost finished) are:
+
+\begin{itemize}
+\item virus scanning using ClamAV
+\item analysing encrypted ZIP files to see if KPA is possible (but not reported yet)
+\end{itemize}
+
+In progress:
+
+\begin{itemize}
+\item comparing binaries using checksums, bsdiff, identifiers
+\end{itemize}
+
+In the next year I will work on the other functionality.
+}
+
+\frame{
+\frametitle{Relation to Linux Foundation's Core Infrastucture Initiative}
+Linux Foundation started the ``Core Infrastructure Initiative'' to improve security and quality of core projects.
+
+This project is not related, and does not overlap, since it works on the other end of the supply chain.
+}
+
+\frame{
+\frametitle{My hopes}
+I hope that this project will lead to a few things:
+
+\begin{itemize}
+\item more attention for security bugs (detection, fixing, prevention) in the supply chain
+\item more easily unlockable security information
+\item more devices ``secure by default''
+\end{itemize}
+
+as well as implementing any cool ideas that you come up with during Q\&A.
+}
+
+\frame{
+\frametitle{Feeling ripped off?}
+If you feel ripped off by this talk and don't want me to ever give this again there are a few things you can do:
+
+\begin{itemize}
+\item complain to your vendors about security bugs so they become more aware
+\item actively help hunt down security bugs in frequently used components of embedded devices
+\item write more secure software
+\item inform others
+\end{itemize}
+}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\frame{
+\frametitle{Contact}
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}

@@ -1,0 +1,218 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions\\\texttt{armijn@tjaldur.nl}}
+\title{Copyright extraction -- tools, challenges, myths}
+\date{November 14, 2014}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item Tjaldur Software Governance Solutions since May 2011
+\item creator of the Binary Analysis Tool for compliance engineering of binary files
+%\item European Coordinator Linux Defenders for Open Invention Network
+\end{itemize}
+}
+
+\frame{
+\frametitle{Today's topic: copyright extraction}
+Some licenses require proper attribution of copyrights. This has not been a priority until now but in recent times it has been given more thought, both by copyright holders doing enforcement, as well as companies (re)distributing software.
+
+Problems and solutions are not always clear so this talk might be a bit chaotic. I will make some assumptions which are not necessarily true. This is still ``work in progress'' and I might be completely wrong.
+
+If any lawyer wants to jump in, please do as I will need you!
+}
+
+\begin{frame}[fragile]
+\frametitle{GPLv2 section 1}
+\begin{verbatim}
+1. You may copy and distribute verbatim copies of the
+Program's source code as you receive it, in any medium,
+provided that you conspicuously and appropriately
+publish on each copy an appropriate copyright notice
+and disclaimer of warranty; [...]
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{GPLv2 section 2}
+\begin{verbatim}
+2. You may modify your copy or copies of the Program
+or any portion of it, thus forming a work based on
+the Program, and copy and distribute such modifications
+or work under the terms of Section 1 above, [...]
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{What does this mean?}
+Some questions:
+
+\begin{itemize}
+\item Is it enough to mention who wrote parts of the code?
+\item How verbose does an attribution need to be?
+\item Do filenames have to be included?
+\item Do years need to be included (possibly because copyright law might have changed in the meantime and the file predates the change?)
+\end{itemize}
+
+Let's look at an example and briefly discuss.
+}
+
+\begin{frame}[fragile]
+\frametitle{Example copyright statement from a file from the Linux kernel}
+\begin{verbatim}
+/* tunnel4.c: Generic IP tunnel transformer.
+ *
+ * Copyright (C) 2003 David S. Miller (davem@redhat.com)
+ */ 
+\end{verbatim}
+
+Just four lines of text...and many questions
+\end{frame}
+
+\frame{
+\frametitle{Tooling for copyright extraction}
+I use a few open source tools for copyright extraction:
+
+\begin{itemize}
+\item Ninka
+\item FOSSology
+\item homebrew script
+\end{itemize}
+
+and still have to do a lot by hand.
+}
+
+\frame{
+\frametitle{Ninka}
+Ninka is a \textit{license} scanner, but it has a nice feature useful for copyright scanning: it can dump the header of the file containing comments.
+
+Most of the time the copyright statements will be in the header of the file. Ninka does not search for any copyright statements in the header, I \textit{only} use it to dump the header.
+}
+
+\frame{
+\frametitle{FOSSology}
+FOSSology is not just for licenses, it also contains a \textit{copyright} scanner, which searches for copyright statements. The scanner catches too much on one hand, and misses copyright notices that are really really difficult to find in an automated way.
+
+Let's not even \textit{start} about trying to automatically find non-English copyright statements!
+}
+
+\begin{frame}[fragile]
+\frametitle{Example of where FOSSology fails}
+\begin{verbatim}
+ * Substantial contributions to this work comes from:
+ *
+ *    David S. Miller, <davem@davemloft.net>
+ *    Stephen Hemminger <shemminger@osdl.org>
+ *    Paul E. McKenney <paulmck@us.ibm.com>
+ *    Patrick McHardy <kaber@trash.net>
+\end{verbatim}
+
+
+This file from the Linux kernel (\texttt{net/ipv4/fib\_trie.c}) has many authors, but FOSSology only recognizes the ones at the start of the file (not listed here) that have a much clearer copyright statement, not the ones later in the header (listed here).
+\end{frame}
+
+\frame{
+\frametitle{Homebrew script}
+Simple Python script that walks a source code tree and for each file:
+
+\begin{enumerate}
+\item dump header with Ninka
+\item run FOSSology copyright extraction
+\item check if all FOSSology results are in the header
+\end{enumerate}
+
+Then I have to assemble/verify/cleanup results by hand.
+
+Current version is customer specific and expects a fully configured build tree of their software. It will be cleaned up and released under the Apache 2 license.
+
+It is far from perfect, and the whole process is incredibly frustrating and very time consuming.
+}
+
+\frame{
+\frametitle{Fast forward to the 21st century}
+Development has become much more distributed than ever before because of systems like Git.
+
+These systems record a lot of history: if you really want you can track all changes of every line of code for most of the Linux kernel. Many people no longer bother to record their authorship statements in files as a result!
+
+Can this (authorship) history replace copyright notices in the file? From a technical point of view it makes complete sense.
+
+Let's discuss for a few minutes!
+}
+
+\begin{frame}[fragile]
+\frametitle{GPLv2 section 2 (reprise)}
+\begin{verbatim}
+[...]
+
+provided that you also meet all of these conditions:
+
+ a) You must cause the modified files to carry prominent
+ notices stating that you changed the files and the date
+ of any change.
+
+[...]
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Questions for the 21st century}
+\begin{itemize}
+\item Can Git history replace the header information, even if GPLv2 says otherwise? What if Git is the only source of authorship information?
+\item How do we get the copyright information from the authorship information?
+\item Do I need to include every copyright holder of the file (possibly obtained from Git history) even if their code is no longer there because it has been completely replaced over time?
+\item How should I represent information from Git to make it an ``appropriate copyright notice'' (note: Git records authorship)?
+\item Can a copyright holder still demand that all the information is added to the header when I redistribute the code?
+\end{itemize}
+
+Let's come back to these questions in a minute.
+}
+
+\frame{
+\frametitle{My reality as a compliance engineer}
+Often I do not get a Git tree: I get raw dumps of build trees with no Git metadata. I would first have to map the files back to information in Git. If there are changes to the file this is difficult.
+
+For now I have to use my ``stone age'' methods until I have a way to easily, efficiently and cheaply determine the origin of (possibly modified) files.
+
+My ideal situation: I upload a file to a service and I get the whole list of known Git hashes that were used for the file.
+
+Now let's go back to the questions.
+}
+
+\frame{
+\frametitle{Questions for the 21st century}
+\begin{itemize}
+\item Can Git history replace the header information, even if GPLv2 says otherwise? What if Git is the only source of authorship information?
+\item Do I need to include every author of the file (obtained from Git history) even if their code is no longer there because it has been completely replaced over time?
+\item How should I represent information from Git to make it an ``appropriate copyright notice''?
+\item Can a copyright holder still demand that all the information is added to the header when I redistribute the code?
+\item YOUR QUESTION HERE
+\end{itemize}
+
+The floor is open!
+}
+
+\frame{
+\frametitle{Contact}
+
+Any questions? Feel free to contact me!
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}

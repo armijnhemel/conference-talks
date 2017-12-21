@@ -1,0 +1,3 @@
+A talk I gave at Linux Foundation's Open Compliance Summit 2014 in Yokohama, Japan.
+
+The topic was copyright statement extraction, and challenges faced with this topic.
