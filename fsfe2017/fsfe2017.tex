@@ -1,0 +1,433 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions}
+\title{ELF deep dive}
+\date{April 28, 2017}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands), exploring reproducible builds (NixOS)
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item owner Tjaldur Software Governance Solutions since May 2011
+\item NixOS Foundation board member
+\end{itemize}
+
+I don't want to be a lawyer. Nothing I say is legal advice.
+}
+
+\frame{
+\frametitle{About Tjaldur Software Governance Solutions}
+\begin{itemize}
+\item (custom) tooling
+\item research (provenance, build tracing, audit techniques, supply chain issues)
+\item GPL compliance engineering (many cases involving Patrick McHardy)
+\item audits (for OSADL and others)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Today's talk}
+It is time to revisit ELF as a lot of people get confused by the whole ``linking'' concept.
+
+Some say: dynamic linking and static linking are the same (license wise). Others say they are the same. But really: ``it depends''.
+
+Let's see what is really going on!
+
+Note: this talk refines my talk from LLW2013.
+} 
+
+\frame{
+\frametitle{Executable formats}
+There are many executable formats:
+
+\begin{itemize}
+\item a.out -- old Unix-format
+\item ELF -- new Unix-format, default on Linux since 1995
+\item bFLT -- format for embedded Linux systems without a memory management unit (``MMU-less'')
+\item Java class files
+\item Dex/OAT -- Android file formats
+\item Python bytecode
+\item PE (Windows)
+\item \dots
+\end{itemize}
+
+Today's focus is on ELF.
+}
+
+\frame{
+\frametitle{What is ELF?}
+ELF is the ``Executable and Linkable Format''. It is (for now) the most widely used form for binaries on Linux and other Unix(-like) systems.
+
+For C/C++/assembler this is the default format.
+
+Before we can dive into the meaty ELF bits let's walk through the process of compiling source code into a binary.
+
+Note: I will provide an \textit{extremely simplified} overview.
+}
+
+\frame{
+\frametitle{Step 1: source code pre-processing}
+First source code is pre-processed. Actions taken:
+
+\begin{itemize}
+\item macros expanded
+\item comments stripped
+\item superfluous whitespace stripped
+\item conditional statements (ifdef, etc.) processed
+\item \dots
+\end{itemize}
+
+The result is still source code, but without any of the ``cruft'' like license texts (which usually are in comments).
+}
+
+\frame{
+\frametitle{Step 2: parsing source code}
+In the second step the source code is tokenized (using a lexical analyzer). A parser then processes the tokens and stores the result in a so called ``abstract syntax tree'' (AST), which is used in subsequent steps.
+
+An optional step here could include program optimization/transformation (example: dead code elimination).
+}
+
+\frame{
+\frametitle{Step 3: code generation}
+In the code generation step the AST is traversed and machine code (ELF format, hardware is being generated, although there likely will be intermediate steps (intermediate language, with more optimization passes, and so on).
+
+For C/C++/assembler files so called ``object files'' (.o files) are generated (ELF relocatable files).
+}
+
+\frame{
+\frametitle{Step 4: linking}
+Finally the object files are combined with information from the C library, header files and other libraries to create a library or executable.
+}
+
+\frame{
+\frametitle{Static vs dynamic linking}
+Static linking: the object code from the program, plus the C library, are combined into one single executable.
+
+ELF also allows ``dynamic linking'': an executable is combined at \textit{run time} with libraries to create a runnable program.
+
+Dynamic linking \textit{partially} delays linking until \textit{run time}, meaning that for analysis you have to take the run time environment (or possibly the execution of a program!) into account.
+}
+
+\frame{
+\frametitle{Why dynamic linking?}
+Dynamic linking has advantages:
+
+\begin{itemize}
+\item sharing code between programs at run time to reduce memory usage
+\item easier to do upgrades for all programs that use a particular library
+\item use less disk/flash space
+\end{itemize}
+}
+
+\frame{
+\frametitle{How dynamic linking works (simplified)}
+
+\begin{enumerate}
+\item during \textit{build time} symbols (function names, variables) that a program
+needs from a library at \textit{run time} are recorded in the binary as ``undefined''.
+\item a list of libraries needed at run time is recorded into the binary.
+\item at run time the symbols that are ``undefined'' are resolved by a program
+called the ``dynamic linker'', which uses the list of declared dependencies to
+find libraries that could possibly have the needed symbols.
+\end{enumerate}
+
+Important: build time and run time environments can be \textit{different}.
+}
+
+\frame{
+\frametitle{Tools for inspecting ELF binaries}
+Important information related to dynamic linking can be extracted from ELF files. For this we need tools, for example:
+
+\begin{itemize}
+\item readelf (standard program on almost every Linux, from GNU binutils)
+\item radare2 (very steep learning curve, non-standard, extremely powerful)
+\end{itemize}
+
+Today I am using readelf, but if you want to automate ELF analysis then it is strongly recommended to use radare2.
+}
+
+\begin{frame}[fragile]
+\frametitle{Dynamic linker configuration (Linux)}
+The location of the dynamic linker is configured in the ELF file:
+
+\begin{verbatim}
+$ readelf --program-headers /bin/vim | grep interpreter
+      [Requesting program interpreter:
+            /lib64/ld-linux-x86-64.so.2]
+\end{verbatim}
+
+The dynamic linker itself can be instructed to look into certain directories for finding dynamically linked libraries, typically \texttt{/etc/ld.so.conf} and files inside \texttt{/etc/ld.so.conf.d/}. Some programs add their own directories with libraries when they are installed (example: Qt).
+
+The order in which (directories with) libraries are searched depends on the configuration of the dynamic linker.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Discovering \textit{declared} dependencies}
+The names of libraries that should be searched are also recorded in the binary:
+
+\begin{verbatim}
+$ readelf -a busybox | grep NEEDED
+ 0x00000001 (NEEDED)   Shared library: [libutility.so]
+ 0x00000001 (NEEDED)   Shared library: [libnvram.so]
+ 0x00000001 (NEEDED)   Shared library: [libapcfg.so]
+ 0x00000001 (NEEDED)   Shared library: [libaplog.so]
+ 0x00000001 (NEEDED)   Shared library: [libcrypt.so.0]
+ 0x00000001 (NEEDED)   Shared library: [libgcc_s.so.1]
+ 0x00000001 (NEEDED)   Shared library: [libc.so.0]
+\end{verbatim}
+
+NB: this list is \textit{only} used to instruct the dynamic linker where to look for symbols. It does not mean that content from the library is \textit{actually} used.
+\end{frame}
+
+\frame{
+\frametitle{Extracting symbols}
+Simplified version: two types of (undefined) symbols are resolved at \textit{run time}:
+
+\begin{itemize}
+\item functions
+\item variables
+\end{itemize}
+
+These are recorded as \textit{undefined} symbols in the binary at \textit{build time} and resolved at \textit{run time}.
+}
+
+\begin{frame}[fragile]
+\frametitle{Discovering undefined symbols}
+ELF files declare the names of symbols that are needed to the outside world:
+
+For functions (for variables:  use ``OBJECT'' instead of ``FUNC''):
+
+\begin{verbatim}
+$ readelf -W --dyn-syms busybox  | grep FUNC | grep UND
+...
+17: 0044e620 148 FUNC GLOBAL DEFAULT UND sigprocmask
+21: 0044e610 564 FUNC GLOBAL DEFAULT UND free
+22: 0044e600  72 FUNC GLOBAL DEFAULT UND raise
+23: 00000000  24 FUNC GLOBAL DEFAULT UND xdr_int
+24: 0044e5f0  64 FUNC GLOBAL DEFAULT UND tcsetpgrp
+25: 0044e5e0  80 FUNC GLOBAL DEFAULT UND strpbrk
+...
+\end{verbatim}
+
+The names are in the last column.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Discovering defined symbols}
+ELF files also export the names of symbols that are exposed to the outside world (and that can be resolved):
+
+For functions (for variables:  use ``OBJECT'' instead of ``FUNC''):
+
+\begin{verbatim}
+$ readelf -W --dyn-syms busybox  | grep FUNC | grep -v UND
+...
+11: 0044b2f8 228 FUNC GLOBAL DEFAULT 10 getgrent_r
+18: 0044695c 144 FUNC GLOBAL DEFAULT 10 print_login_prompt
+20: 0044a830 164 FUNC GLOBAL DEFAULT 10 bb_do_delay
+27: 004477a0 780 FUNC GLOBAL DEFAULT 10 bb_parse_mode
+...
+\end{verbatim}
+
+The names are in the last column.
+\end{frame}
+
+\frame{
+\frametitle{Resolving manually}
+Resolving these symbols manually is actually quite easy!
+
+\begin{enumerate}
+\item get list of \textit{declared} dependencies for a binary
+\item get list of \textit{undefined} symbols from said binary
+\item for each of the declared dependencies (libraries, etc.) get a list of \textit{defined} symbols
+\item match undefined symbols from the binary with defined symbols of the dependencies
+\item stop when all dependencies are resolved, or when all dependencies have been scanned
+\item report unresolved symbols, or superfluous dependencies
+\end{enumerate}
+
+Do this recursively for all dependencies and you get a linking graph.
+}
+
+\frame{
+\frametitle{Superfluous dependencies}
+Superfluous dependencies happen \textit{all the time}.
+
+\begin{itemize}
+\item sloppy build scripts (declaring too much)
+\item linker at \textit{build time} does not thoroughly verify if the symbols are present in the dependency because at \textit{run time} it might be a different library
+\end{itemize}
+
+Dependencies that are listed (``\texttt{NEEDED}'' in output of readelf) are not necessarily actual dependencies.
+
+Superfluous dependencies are a configuration error. If you ever encounter someone says something to the contrary, then PatchELF is your friend: \url{https://nixos.org/patchelf.html}
+}
+
+\frame{
+\frametitle{Example: Trendnet TEW-636APB}
+The Trendnet TEW-636APB is a wireless access point. Originally the device was
+made by Sercomm from Taiwan.
+
+The firmware is a complete update: the whole flash is overwritten during the
+update, so we have the complete operating system, libraries, and so on, in the
+firmware update.
+
+It has a GPL source code release, so we can verify our findings in the build
+scripts and source code.
+
+The example program used is BusyBox.
+}
+
+\begin{frame}[fragile]
+\frametitle{Declared dependencies of BusyBox in the TEW-636APB}
+
+\begin{verbatim}
+$ readelf -a busybox | grep NEEDED
+ 0x00000001 (NEEDED)   Shared library: [libutility.so]
+ 0x00000001 (NEEDED)   Shared library: [libnvram.so]
+ 0x00000001 (NEEDED)   Shared library: [libapcfg.so]
+ 0x00000001 (NEEDED)   Shared library: [libaplog.so]
+ 0x00000001 (NEEDED)   Shared library: [libcrypt.so.0]
+ 0x00000001 (NEEDED)   Shared library: [libgcc_s.so.1]
+ 0x00000001 (NEEDED)   Shared library: [libc.so.0]
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Analysis using resolving symbols}
+The method described above reports that \texttt{libnvram.so} and
+\texttt{libaplog.so} are \textit{not used} by BusyBox (but they \textit{are}
+needed on the system to satisfy the dynamic linker).
+
+Manual verification of the BusyBox binary and the libraries \textit{confirms}
+this.
+
+The other libraries (\texttt{libutility.so} and \texttt{libapcfg.so}) \textit{are} used by BusyBox.
+}
+
+\frame{
+\frametitle{Recursively resolving dependencies}
+\texttt{libnvram.so} and \texttt{libaplog.so} could still be used by the other
+libraries!
+
+Further inspection reveals that \texttt{libnvram.so} actually \textit{is} used
+by \texttt{libapcfg.so} (which in turn is used by BusyBox).
+
+But these two libraries are not used by BusyBox \textit{directly}!
+}
+
+\frame{
+\frametitle{}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dot-busybox}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Analysing the source}
+
+In \texttt{Rules.mak} it is clear to see why these dependencies are recorded in the binary:
+
+\texttt{LIBRARIES+= -lutility -lnvram -lapcfg -laplog}
+
+It doesn't say anything about symbols being used.
+}
+
+\frame{
+\frametitle{The bigger picture}
+Question: Are there any more pitfalls, for example dependencies that are \textit{undeclared} and hidden?
+
+Answer: yes.
+}
+
+\frame{
+\frametitle{The bigger picture (literally): hidden dependencies}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.1cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dot-busybox2}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{LOLWUT?}
+How could this happen?
+
+Looking at the sources: the dependencies are not there as source code, but only as binary code. The libraries were compiled in a different environment with a different configuration and then transplanted into another build environment.
+
+This is the reality in the consumer electronics world.
+}
+
+\frame{
+\frametitle{Going even further}
+What else could happen?
+
+\begin{itemize}
+\item two libraries that offer the same symbols, and both are declared dependencies (I vaguely remember seeing examples in the wild). It then depends on the configuration of the dynamic linker which library is picked up first.
+\item libraries that do not implement all symbols that are needed (leading to undefined behaviour at run time)
+\end{itemize}
+
+But detecting this is future work.
+}
+
+\frame{
+\frametitle{Stepping back}
+What does this all mean?
+
+\begin{enumerate}
+\item in dynamic linking symbols are only resolved at \textit{run time}. This means that a full description of the run time environment (including changes over time) is needed to draw conclusions.
+\item linking information recorded in a binary is not necessarily correct, but is just there to pass information to the dynamic linker.
+\end{enumerate}
+
+It would be possible to make a non-deterministic dynamic linker, for example by reconfiguring the dynamic linker every few minutes.
+}
+
+\frame{
+\frametitle{In practice}
+So is this really a problem in practice?
+
+I think not:
+
+\begin{itemize}
+\item on most desktop and server machines build time and run time are actually the same
+\item on embedded systems it is usually possible to analyze packages in the whole environment
+\item symbol clashes are (I think) very rare
+\item no one has created a non-deterministic dynamic linker and no one should!
+\end{itemize}
+}
+
+\frame{
+\frametitle{Wrapping up}
+Dynamic linking and static linking really \textit{are} different from a licensing point of view.
+
+However, in practice problems are very unlikely to happen and dynamic and static linking can, in most cases, be treated as equivalent (from a licensing point of view).
+}
+
+\frame{
+\frametitle{Contact}
+
+Any questions? Feel free to contact me!
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\end{itemize}
+
+}
+
+\end{document}
