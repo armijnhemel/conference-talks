@@ -1,0 +1,1 @@
+Slides for talk given at LinuxCon Europe 2011 in Prague, Czech Republic about build tracing
