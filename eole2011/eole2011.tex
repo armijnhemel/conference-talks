@@ -1,0 +1,219 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{GPL license compliance}
+\date{November 4, 2011}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} since 2005
+\item ex-board member at NLUUG (\url{http://www.nluug.nl/})
+\item sysadmin, developer and consultant at Loohuis Consulting (2006 - May 2011)
+\item May 2011 - present: owner Tjaldur Software Governance Solutions
+\end{itemize}
+}
+
+\frame{
+\frametitle{Subjects}
+
+\begin{itemize}
+\item license enforcement across the world
+\item cause of license violations in consumer electronics
+\item short overview of tooling and processes
+\end{itemize}
+
+I will not talk about software patents.
+}
+
+\frame{
+\frametitle{License enforcement}
+
+\begin{itemize}
+\item Europe (Germany, France) \& USA
+\item focus is on GPLv2 and LGPLv2/2.1
+\item done by companies (Nokia, Red Hat) and individual developers (Harald Welte, BusyBox, etc.)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Reactions from companies}
+Companies are often quite mad when confronted:
+
+\begin{itemize}
+\item dispute the license (``but it's free!'')
+\item they have done everything in good faith (``go to my supplier, it's their fault'')
+\item no clue about their own responsibility (``but the competitor is doing it too!'')
+\end{itemize}
+
+Bummer.
+}
+
+\frame{
+\frametitle{Background about violations}
+
+Everyone makes mistakes, but mistakes need to be fixed:
+
+\begin{enumerate}
+\item understand
+\item acknowledge
+\item fix
+\item prevent
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Consumer electronics: the truth}
+Almost everything is purchased pre-fab in Asia. Making everything yourself is commercial suicide:
+
+\begin{itemize}
+\item extremely thin margins
+\item cut throat competition
+\item quality is less important than price
+\item ``cowboys''
+\end{itemize}
+
+It's like Nike: don't do any production, just marketing and sales.
+}
+
+\frame{
+\frametitle{}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{alibaba}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Problem source: supply chain}
+License violations are often a direct result of a mistake made in the supply chain:
+
+\begin{itemize}
+\item chipset vendors
+\item board makers
+\item SDK (``Software Development Kit'') vendor
+\item reference design makers
+\item product customizers
+\item ``labellers''
+\end{itemize}
+
+The roles are not always very clearly separated. The ``labellers'' are legally
+responsible.
+}
+
+\frame{
+\frametitle{Experiences with Asia}
+
+Barriers:
+
+\begin{itemize}
+\item copyright works differently
+\item cultural barriers
+\item NDAs were mandatory for years, now source code is demanded
+\item GPLv2 is in English
+\item GPL code is seen as ``public domain''
+\end{itemize}
+}
+
+\frame{
+\frametitle{Experiences with Asia (2)}
+
+\begin{itemize}
+\item low risk getting caught, so why bother?
+\item ``best practices'' are not applied: development processes are often quite sloppy
+\item everything is short term
+\item engineers switch companies fast, especially in Taiwan
+\item competitors also don't follow licenses and ``save'' money
+\end{itemize}
+}
+
+\frame{
+\frametitle{How can we improve the situation in Asia (and here)?}
+
+``Put your money where your mouth is''
+
+\begin{itemize}
+\item education
+\item economic pressure
+\item tools
+\item research
+\end{itemize}
+}
+
+\frame{
+\frametitle{Education}
+It's a people problem, not a technical problem!
+
+\begin{itemize}
+\item talks
+\item articles
+\item documentation in local languages (at the moment traditional Chinese)
+\item help local organisations (for example: OpenFoundry in Taiwan)
+\item train more compliance engineers
+\end{itemize}
+}
+
+\frame{
+\frametitle{Economic pressure}
+
+\begin{itemize}
+\item more legal cases in Europe and USA
+\item convince companies to use contracts to push the problem into the supply chain
+\end{itemize}
+
+Non-compliance becomes more expensive, so there is a better incentive for companies to comply.
+}
+
+\frame{
+\frametitle{Tools}
+
+Goal: let companies do these checks themselves.
+
+\begin{itemize}
+\item Binary Analysis Tool (ask me for a demo)
+\item integrating license scanners (Ninka, FOSSology) into (development) processes
+\item long term: more tooling
+\end{itemize}
+
+}
+
+\frame{
+\frametitle{Academic research}
+
+There is a lot of unclarity about licenses, so we need more research:
+
+\begin{itemize}
+\item Finding Software License Violations Through Binary Code Clone Detection (Mining Software Repositories 2011)
+\item What Goes into an Executable? Identifying a Binary's Sources by Tracing Build Processes (sent to ICSE 2012, not yet accepted)
+\item future research
+\end{itemize}
+}
+
+\frame{
+\frametitle{Results}
+The situation is improving. More and more companies are learning how to deal with Open Source Software, but slowly.
+
+We have noticed that in Asia there is more interest in correctly following licenses.
+
+Expectation: enough work for the coming 10 years
+}
+
+\frame{
+\frametitle{Questions}
+}
+
+\end{document}
