@@ -1,0 +1,182 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{}
+\date{February 13, 2012}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} since 2005
+\item ex-board member at NLUUG (\url{http://www.nluug.nl/})
+%\item sysadmin, developer and consultant at Loohuis Consulting (2006 - May 2011)
+\item owner Tjaldur Software Governance Solutions
+\end{itemize}
+}
+
+\frame{
+\frametitle{Subjects}
+
+\begin{itemize}
+\item very brief overview of license violations
+\item problems in binary code clone detection
+\item open questions in binary code clone detection
+\end{itemize}
+}
+
+\frame{
+\frametitle{License enforcement}
+
+\begin{itemize}
+\item Europe (Germany, France) \& USA
+\item focus is on GPLv2 and LGPLv2/2.1
+\item done by companies (Nokia, Red Hat) and individual developers and projects (Harald Welte, BusyBox, XviD, etc.)
+\end{itemize}
+
+It is about copyright, not about patents!
+}
+
+\frame{
+\frametitle{gpl-violations.org}
+Founded in 2004 by Harald Welte (copyright holder in the Linux kernel) to take on GPL license violations by:
+
+\begin{itemize}
+\item education
+\item documentation
+\item legal action
+\end{itemize}
+
+I have been active with \url{gpl-violations.org} since 2005.
+
+So far we've had several hundred cases (most of them settled) and fixed many more using informal pressure.
+}
+
+\frame{
+\frametitle{How gpl-violations.org works}
+
+\begin{enumerate}
+\item we get a report via private email, public mailing list, chat, rumours, SMS, or our own research
+\item if there is reasonable doubt about compliance of a device we do a test purchase to confirm the violation
+\item if we confirm a violation we send a ``cease and desist''
+\end{enumerate}
+
+There are many false reports: a lot of people don't understand the license(s).
+
+Our main focus is on consumer electronics (one of the biggest markets out there).
+}
+
+\frame{
+\frametitle{Consumer electronics: the truth}
+Almost everything is purchased. Making everything yourself is commercial suicide:
+
+\begin{itemize}
+\item extremely thin margins
+\item cut throat competition
+\item quality is less important than price
+\item (ultra) short term thinking: companies don't know if they will still be in business in 6 months from now
+\item ``cowboys''
+\end{itemize}
+
+It's like Nike: don't do any production, just marketing and sales.
+
+In my experience typically more than 95\% (or more) is reuse of open source software (with/without modifications)
+}
+
+\frame{
+\frametitle{}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{alibaba}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Problem source: supply chain}
+License violations are often a direct result of a mistake made in the supply chain:
+
+\begin{itemize}
+\item chipset vendors
+\item board makers
+\item SDK (``Software Development Kit'') vendor
+\item reference design makers
+\item product customizers
+\item ``labellers''
+\end{itemize}
+
+The ``labellers'' get sued and are responsible, even though they add/modify the least amount of code!
+}
+
+\frame{
+\frametitle{Industry responses to enforcement}
+
+\begin{itemize}
+\item extreme levels of frustration (problem doesn't go away by throwing money at it)
+\item they don't care about licenses, they just want to sell a product. Licenses are a nuisance that needs to be dealt with.
+\item a single enforcement case will make no change to the market (it is too big: a single company getting in trouble is not significant to push for change)
+\item no ill will. Companies want to fix it and there is a need for tools (cheap, or free) to do ``due dilligence''
+\end{itemize}
+}
+
+\frame{
+\frametitle{Tools}
+Apart from the obvious ``industry standard ''tools that solve some problems Tjaldur Software Governance Solutions has worked on tools to help solving specific problems in this field.
+
+Goal: let companies do checks themselves, increasing quality and lowering costs.
+
+\begin{itemize}
+\item Binary Analysis Tool (Apache 2 license, freemium model)
+\item license scanning tools (leveraging existing tools like Ninka and FOSSology)
+\item long term: build system integration (preliminary work has been done)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Binary Analysis Tool}
+
+\begin{itemize}
+\item generic extensible pluggable framework for analysing binaries
+\item binary code clone detection using string comparisons: first extract string constants from the binary, compare it with a large database of data extracted from source code, finally assign a score to packages based on matches
+\end{itemize}
+
+Demo later this week.
+}
+
+\frame{
+\frametitle{Academic research}
+
+There is a lot of unclarity about licenses and software provenance, and academia can help here. I'm trying to do my share, team up with researchers for research:
+
+\begin{itemize}
+\item ``Finding Software License Violations Through Binary Code Clone Detection'' (Mining Software Repositories 2011) - some results have been integrated into Binary Analysis Tool
+\item ``What Goes into an Executable? Identifying a Binary's Sources by Tracing Build Processes'' (sent to WCRE 2011 and ICSE 2012, unfortunatey rejected) - I'm preparing tooling that implements this
+\item future research (your name here)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Open questions/problems}
+
+\begin{itemize}
+\item detecting obfuscated code in binaries (when basic string comparisons simply aren't enough)
+\item detecting language embedding (interpreters, DSLs) in binaries (if they have been compiled)
+\item correlating binary code and source code (solved for source to binary using tracing, not from binary to source side)
+\item complete provenance of binary and source code files, down to the level of single commits (example: individual Git commits) because snapshots from DVCS (like Git) are rapidly replacing normal releases
+\item reducing false positives in detection: false claims can lead to counter lawsuits, with significant risks
+\end{itemize}
+}
+
+\end{document}
