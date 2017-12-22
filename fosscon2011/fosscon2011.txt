@@ -1,0 +1,1 @@
+Slides for a talk I gave at FOSSCon Korea 2011 about Android license compliance. Since then a lot has happened in Android-land and this talk is heavily outdated and just here for historical reasons.
