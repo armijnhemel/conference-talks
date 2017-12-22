@@ -1,0 +1,304 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+%\author{Armijn Hemel}
+\title{Using the Binary Analysis Tool - part 2}
+%\date{January 17, 2011}
+\date{}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{Subjects}
+
+In this course you will learn:
+
+\begin{itemize}
+\item to determine the type of a file
+\item to find dependencies of dynamically linked binary files (ELF format)
+\item to extract human readable strings from binary files
+\item to extract function names from dynamically linked ELF files
+\item how these methods are implemented in the Binary Analysis Tool
+\end{itemize}
+}
+
+\frame{
+\frametitle{Examining individual files}
+
+Possible types of analysis that could be performed on an individual file:
+
+\begin{itemize}
+\item file type
+\item dynamically linked libraries
+\item extracting human readable strings
+\item match strings extracted from binaries with source code
+\item extracting function names from ELF executables
+\item match function names extracted from binaries with source code
+\end{itemize}
+}
+
+\frame{
+\frametitle{Interesting files for compliance analysis}
+There are various types of files that are interesting in for license compliance:
+
+\begin{itemize}
+\item executables (ELF, bFLT, Java, Windows executables)
+\item libraries
+\item Linux kernel images
+\end{itemize}
+
+Other files, such as audio, video or graphics files, can be interesting too for trademarks, or licensing (Creative Commons), but are outside of the scope of this course.
+}
+
+\frame{
+\frametitle{Determining file types}
+You can make a good first guess with the \texttt{file} command, which uses \texttt{libmagic}.
+
+\texttt{libmagic} uses the so called ``magic database'' which contains descriptions for many sorts of files. It is usually found in \texttt{/usr/share/magic} on Linux systems.
+
+By looking at a significant number of bytes and it can make an educated guess which type a file has, since many files have unique identifiers or characteristics.
+}
+
+\frame{
+\frametitle{Excercise: determine the type of files}
+
+Use the \texttt{file} command to determine the type of various files on your system.
+}
+
+\frame{
+\frametitle{Drawbacks of using \texttt{file} and \texttt{libmagic}}
+There are some drawbacks to using commands like \texttt{file} or tools that use \texttt{libmagic}:
+
+\begin{itemize}
+\item the descriptions in the magic database can and will change over time and sometimes contains errors.
+\item the magic database is not complete.
+\item some file types don't have a fixed magic type.
+\item not the entire file is considered, but just a number of bytes (up to a few hundred), so false positives can happen, especially if extra data has been appended to the file (this happens frequently with firmware images).
+\end{itemize}
+}
+
+\frame{
+\frametitle{File type verification in BAT}
+In BAT data from \texttt{libmagic} is used for reporting, but not for searching and unpacking. It is used sometimes as a verification step.
+
+Instead, a more \textit{conservative} approach is used:
+
+\begin{itemize}
+\item BAT uses standard tools to verify, even though this sometimes costs more time. For example \texttt{gifinfo} is used to verify GIF files. Compared to \texttt{file} these tools often actually do take the whole file into account.
+\item BAT errs on the safe side: if not sure (or sure enough) that a file is of a certain type then it is treated as an unknown file type.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Inspecting dynamically linked ELF files}
+In case the file is an ELF executable (executable program) or shared object (library for dynamic linking) it is important to find the run time dependencies (also called \textit{shared libraries}) because linking creates a \textit{derivative work} which is very significant for fullfilling licensing conditions.
+}
+
+\frame{
+\frametitle{ELF dynamic linking 101}
+ELF executables can be linked in two ways:
+
+\begin{itemize}
+\item static linking: all dependencies (C library, other libraries) are included into the final executable.
+\item dynamic linking: dependencies are recorded at build time, but only resolved when the program is run (run time)
+\end{itemize}
+
+For license requirements it is very significant to see what a program links to (either dynamically or statically). If a program is dynamically linked you need to inspect the file to find the dependencies.
+}
+
+\begin{frame}[fragile]
+\frametitle{Using \texttt{readelf} to display shared libraries}
+The best tool to display shared libraries is to use the \texttt{readelf}, which is part of GNU binutils.
+
+The command:
+
+\texttt{readelf -d | grep NEEDED}
+
+will display the shared libraries that are used, for example (output formatted using \texttt{cut}):
+
+\begin{verbatim}
+$ readelf -d /bin/ls | grep NEEDED | cut -f 4- -d " "
+            Shared library: [libselinux.so.1]
+            Shared library: [librt.so.1]
+            Shared library: [libcap.so.2]
+            Shared library: [libacl.so.1]
+            Shared library: [libc.so.6]
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Why not use \texttt{ldd}?}
+
+One reason to not use \texttt{ldd} is that \texttt{ldd} uses the dynamic linker on the \textit{local} system to find dependencies.
+
+It might seem that an executable or library is linked with a certain library, while in fact it is not and just a dependency on the \textit{local} system.
+
+Also, it will not work for executables compiled for different architectures.
+}
+
+\frame{
+\frametitle{Excercise: find the dynamically linked libraries of a file}
+\begin{enumerate}
+\item Look at several dynamically linked executables on your system with \texttt{readelf}. Also look at them with \texttt{ldd} and try to spot differences.
+\item repeat, but with files from the test firmware(s)
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Extracting human readable strings from a file}
+With the \texttt{strings} program it is possible to extract sequences of human readable text (in the ASCII range)
+from a file (by default sequences of length 4 or greater):
+
+\texttt{strings /path/to/file}
+
+These sequences are (possibly) string constants that are not stripped by the compiler:
+
+\begin{itemize}
+\item output messages
+\item error messages
+\item debug messages
+\item etcetera
+\end{itemize}
+
+If extracted strings can be matched to source code they can provide a fingerprint of what source code was used.
+}
+
+\frame{
+\frametitle{Excercise: extracting strings from a file using \texttt{strings}}
+
+Examine a few executables on your system by running \texttt{strings} on it:
+
+\texttt{strings /path/to/file}
+
+It is useful to play with the size parameter (\texttt{-n}) and see how output will differ: smaller sequences will give more output, but also have significantly more noise. Example to extract sequences of size 6:
+
+\texttt{strings -n 6 /path/to/file}
+}
+
+\frame{
+\frametitle{Matching strings from binaries with source code}
+
+After extracting strings you need to find out where they come from. Good sources are:
+
+\begin{itemize}
+\item search engines
+\item database containing strings from source code
+\end{itemize}
+
+BAT has mechanisms available to use databases and there are companies that offer pregenerated databases.
+}
+
+\frame{
+\frametitle{Unique matches}
+If a string can only be found in one package (counting different versions, or rebranded packages, as one package) it is a \textit{unique match}.
+
+If there are many unique matches, it is a good sign that a certain piece of software was used in the binary.
+
+However: you should never base a conclusion on just one unique match.
+}
+
+\frame{
+\frametitle{Non-unique matches}
+
+There are several reasons why strings might appear in multiple programs:
+
+\begin{itemize}
+\item massive reuse of (open source) code and copying of code between programs (``cloning''): good examples are \texttt{zlib} and \texttt{libjpeg}
+\item protocols and standards (POSIX, RFCs, W3C, C, etcetera)
+\item coding styles (GNU, others)
+\end{itemize}
+}
+
+
+\frame{
+\frametitle{String extraction in the Binary Analysis Tool}
+In the Binary Analysis Tool only strings with length of 5 or longer are considered.
+
+Two ways to compare strings are implemented:
+
+\begin{enumerate}
+\item checks with a few hardcoded strings (that are most likely unique for some packages)
+\item advanced check using database backend (needs database)
+\end{enumerate}
+
+The first method is very quick, the second method is much more accurate, but requires a lot of data. Generating a database is covered in a later course and scripts to generate databases are freely available.
+}
+
+\frame{
+\frametitle{Extracting function names from a dynamically linked ELF file}
+Another way to fingerprint a binary is to extract \textit{function names} from the binary and compare them to function names extracted from source code.
+
+Because function names need to be resolved during runtime (``dynamic linking'') they need to be declared so the dynamic linker knows which function names to find where. Therefore all function names are found in a table with function names.
+
+Local function names (that have associated code in the binary) have an address associated with them, while remote functions are declared ``undefined''. It is very easy to extract local functions.
+}
+
+\frame{
+\frametitle{Excercise: extract function names from a dynamically linked ELF file}
+Extract function names from several dynamically linked ELF files on your system using the following command:
+
+\texttt{readelf --dyn-syms /path/to/file | grep FUNC | grep -v UND | tr -s " " | cut -f 9 -d " "}
+}
+
+\frame{
+\frametitle{Matching function names from binaries with source code}
+
+After extracting function names you need to find out where they come from, just like with strings. Good sources are:
+
+\begin{itemize}
+\item search engines
+\item database containing function names extracted from source code
+\end{itemize}
+
+BAT has mechanisms available to use databases and there are companies that offer pregenerated databases.
+}
+
+\frame{
+\frametitle{Function name extraction in the Binary Analysis Tool}
+
+Function names are extracted from source code using \texttt{ctags} and stored in a database.
+
+During analysis of the binary the right ELF section is extracted using \texttt{readelf}, similar to shown before. Function names that come from C++ are \textit{demangled} first, using \texttt{c++filt} to restore function names.
+
+Then function names are matched with the database. Currently only unique function names are used in reporting.
+}
+
+\frame{
+\frametitle{Circumventing detection techniques}
+
+The techniques mentioned above are quite easy to beat. String comparisons can be beaten by changing strings. Function name comparisons can be beaten by changing function names.
+
+Trying to foil detection is not hard, but it is costly:
+
+\begin{itemize}
+\item extra costs replacing function names and strings (and maintaining compatibility)
+\item maintenance costs
+\end{itemize}
+
+plus these are not the only possible detection methods that could be used in the future.
+
+From a compliance enforcement point of view the idea of these techniques is to make circumvention more expensive than complying with the licenses in the first place.
+}
+
+\frame{
+\frametitle{Conclusion}
+
+In this course you have learned about:
+
+\begin{itemize}
+\item determining the type of a file
+\item determining names of dynamically linked libraries
+\item extracting human readable strings from binary files
+\item extracting function names from dynamically linked ELF executables
+\item how the above are implemented in the Binary Analysis Tool
+\end{itemize}
+
+In the next course we will dig into how the Binary Analysis Tool can be configured and how results can be read.
+}
+
+\end{document}

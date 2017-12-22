@@ -1,0 +1,1 @@
+Slides of a short training that I was supposed to give at the Real Time Linux Workshop in Lugano, Switzerland in 2013. Since there were too few participants for the training it was canceled (hence it being incomplete).
