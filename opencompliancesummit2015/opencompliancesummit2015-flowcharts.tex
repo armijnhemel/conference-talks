@@ -1,0 +1,232 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions\\\texttt{armijn@tjaldur.nl}}
+\title{Flowcharts for compliance in the supply chain}
+\date{November 12, 2015}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{Today's goal: get started on easy to use flowcharts}
+Let's see if we can start on making flowcharts that are:
+
+\begin{itemize}
+\item easy to use in countries where English is not the main language
+\item useful to getting people up to speed
+\item codifying best practices
+\end{itemize}
+
+Guides from SFC, FSF and SFLC are great, but use language that is difficult for non-native speakers. They are also very long so it is easy to miss steps.
+}
+
+\frame{
+\frametitle{Building blocks}
+Let's first look at:
+
+\begin{itemize}
+\item distribution methods
+\item compliance options
+\end{itemize}
+}
+
+\frame{
+\frametitle{Distribution methods}
+Software is usually distributed in one of the following ways:
+
+\begin{itemize}
+\item offline distribution: physical device, DVD, CD, memory stick, etc.
+\item online distribution (regular case): downloadable (partial) firmwares, apps
+\item online distribution (special case): over the air updates
+\end{itemize}
+}
+
+\frame{
+\frametitle{Compliance options}
+For companies there are two ways to comply with GPL version 2:
+
+\begin{itemize}
+\item supply source code with binary code (GPLv2, section 3a)
+\item written offer (GPLv2, section 3b)
+\end{itemize}
+}
+
+\frame{
+\frametitle{GPL requirements}
+
+\begin{itemize}
+\item ship a copy of the license text with the software (source or binary)
+\item ship copyright notices with the software (source or binary)
+\end{itemize}
+}
+
+\frame{
+\frametitle{}
+Depending on how you distribute the binary there are different options available for fullfilling the GPL requirements:
+
+\begin{tabular}{|l|c|c|}
+\hline
+& source code & written offer \\
+\hline
+offline & X & X \\
+\hline
+online (regular) & X & X \\
+\hline
+over the air & & X \\
+\hline
+\end{tabular}
+
+Let's quickly run through these and look at benefits and drawbacks.
+}
+
+\frame{
+\frametitle{Offline distribution: Source code}
+Benefits:
+
+\begin{itemize}
+\item all license texts present
+\item all copyright statements present
+\item after distribution you have no more license obligations
+\end{itemize}
+
+Drawbacks:
+
+\begin{itemize}
+\item possible e-waste (DVD/CD/memory card)
+\item correcting mistakes is expensive (possible recall)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Offline distribution: written offer}
+Benefits:
+
+\begin{itemize}
+\item easier to correct any mistakes
+\item less possible e-waste
+\end{itemize}
+
+Drawbacks:
+\begin{itemize}
+\item extraction of license texts
+\item extraction of copyright statements
+\item after distribution of the binary you have license obligations for an extended period of time (3 years or longer), so you need to keep track of what you distributed, and when, and where you stored the GPL archive
+\end{itemize}
+}
+
+\begin{frame}[fragile]
+\frametitle{Source code with binary: online (regular)}
+GPLv2 states:
+
+\begin{verbatim}
+If distribution of executable or object code is made by
+offering access to copy from a designated place, then
+offering equivalent access to copy the source code from
+the same place counts as distribution of the source code,
+even though third parties are not compelled to copy the
+source along with the object code.
+\end{verbatim}
+
+which is understood by many as having source code with a firmware update online is good enough.
+\end{frame}
+
+\frame{
+\frametitle{Online distribution: Source code}
+Benefits:
+
+\begin{itemize}
+\item all license texts present
+\item all copyright statements present
+\item after distribution you have no more license obligations
+\item correcting mistakes is relatively easy
+\end{itemize}
+
+Drawbacks:
+
+\begin{itemize}
+\item it is easy to lose track of GPL source code releases (website redesign by marketing department, server crashes)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Online distribution: written offer}
+Benefits:
+
+\begin{itemize}
+\item easy to correct any mistakes
+\end{itemize}
+
+Drawbacks:
+\begin{itemize}
+\item extraction of license texts
+\item extraction of copyright statements
+\item after distribution of the binary you have license obligations for an extended period of time (3 years or longer), so you need to keep track of what you distributed, and when, and where you stored the GPL archive
+\end{itemize}
+}
+
+\frame{
+\frametitle{OTA updates}
+Over the air (OTA) updates can be performed with or without user interaction. If done without user interaction (auto-update) it is sometimes impossible to inform a user of its rights.
+}
+
+\frame{
+\frametitle{OTA distribution: Source code}
+Source code distribution for OTA updates is very impractical.
+
+Drawbacks:
+
+\begin{itemize}
+\item huge download being forced upon users automatically
+\item very clear instructions needed for a user to get source code off the device
+\end{itemize}
+}
+
+\frame{
+\frametitle{OTA distribution: written offer}
+Drawbacks:
+
+\begin{itemize}
+\item needs thought of where to put the written offer (device manual? device menu?)
+\item written offer might need to be renewed if software is added or removed
+\item extraction of license texts
+\item extraction of copyright statements
+\item after distribution of the binary you have license obligations for an extended period of time (3 years or longer), so you need to keep track of what you distributed, and when, and where you stored the GPL archive
+\end{itemize}
+}
+
+\frame{
+\frametitle{Let's try to make some flowcharts!}
+Assumptions:
+
+\begin{itemize}
+\item source code archive is ``complete and corresponding source code
+\item there are no license violations in the code
+\end{itemize}
+}
+
+\frame{
+\frametitle{Future work}
+
+We can probably make more flowcharts for other scenarios:
+
+\begin{itemize}
+\item incoming code
+\item scanning
+\end{itemize}
+}
+
+\frame{
+\frametitle{Contact}
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}

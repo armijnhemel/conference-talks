@@ -1,0 +1,5 @@
+Slides for a talk I gave at the Open Compliance Summit 2015. These discussions eventually lead to the flowcharts in "Practical GPL Compliance":
+
+https://www.linuxfoundation.org/publications/practical-gpl-compliance-download-this-free-guide-today/
+
+and later adapted for OpenChain.
