@@ -1,1 +1,5 @@
 Slides of talk I gave at FSFE's Legal & Licensing Workshop in 2014. Originally this talk was under Chatham House Rule.
+
+Later the same subject was also covered at ASE 2014 in September 2014:
+
+http://rebels.ece.mcgill.ca/confpaper/2014/09/14/tracing-software-build-processes-to-uncover-license-compliance-inconsistencies.html
