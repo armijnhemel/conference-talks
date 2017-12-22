@@ -1,0 +1,257 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{Visualizing Linux kernel module linking graphs}
+\date{June 3, 2015}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item Tjaldur Software Governance Solutions since May 2011
+\item creator of Binary Analysis Tool
+\end{itemize}
+}
+
+\frame{
+\frametitle{Today's topic}
+This talk is about visualizing dependencies between kernel modules and the main Linux kernel and finding ``smells''
+
+\begin{itemize}
+\item compliance issues
+\item configuration bugs
+\item upstreaming opportunities
+\item \dots
+\end{itemize}
+}
+
+\frame{
+\frametitle{Linux kernel modules}
+Linux loadable kernel modules (LKM) are pieces of code that can be loaded into a Linux kernel at runtime to provide extra functionality:
+
+\begin{itemize}
+\item hardware support
+\item extra firewalling protocols
+\item file systems
+\item \dots
+\end{itemize}
+}
+
+\frame{
+\frametitle{Modules: legal issues}
+Some people/companies have used the LKM mechanism in Linux to load proprietary code into the Linux kernel. There is no consensus about whether or not this is allowed.
+
+Some mechanisms were added to ``curb'' this behaviour:
+
+\begin{itemize}
+\item ``tainted''
+\item license field (\texttt{MODULE\_LICENSE})
+\item GPL only kernel symbols (\texttt{EXPORT\_SYMBOL\_GPL})
+\end{itemize}
+}
+
+\frame{
+\frametitle{GPL only kernel symbols}
+The \texttt{EXPORT\_SYMBOL\_GPL} macro was created to flag symbols that should only be made visible to modules that have their license set to GPL, or a GPL-compatible license.
+
+This seems to work fairly well, but it is still largely a social contract: the source code can be changed to change \texttt{EXPORT\_SYMBOL\_GPL} to \texttt{EXPORT\_SYMBOL} (and some people have), but this is very controversial.
+}
+
+\frame{
+\frametitle{Visualizing kernel linking graphs}
+Visualizing kernel linking graphs is useful for a number of reason:
+
+\begin{itemize}
+\item seeing if a proprietary module uses GPL kernel modules, possibly several layers deep
+\item seeing if a module uses unknown symbols (upstreaming opportunities)
+\item \dots
+\end{itemize}
+
+For this the following is needed:
+
+\begin{itemize}
+\item symbols needed by a module
+\item symbols exported by a module or the main Linux kernel image
+\item symbol names and type extracted from source code
+\item extra meta information from the module (license, version, dependency information)
+\end{itemize}
+}
+
+\begin{frame}[fragile]
+\frametitle{Extracting needed symbols}
+Linux kernel modules are ELF files. When loaded into the Linux kernel undefined symbols are (or should be) resolved. These symbols can be found in the ELF symbols section of the file, example:
+
+\begin{verbatim}
+$ readelf -W --syms fat.ko  | grep UND
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting exported symbols (modules, kernel in ELF format)}
+Symbols are stored in a section called \texttt{ksymtab\_strings} and can easily be extracted:
+
+\begin{verbatim}
+$ readelf -W -p__ksymtab_strings fat.ko
+\end{verbatim}
+
+After some postprocessing (easy to do with a bit of scripting) you get the list of symbols exported to the outside world.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting exported symbols (kernel not in ELF format)}
+Symbols in a Linux kernel are stored in a list with NUL-terminated strings. Extract symbols by looking for a symbol that exists in (virtually) every kernel, like \texttt{loops\_per\_jiffy} and then walk the list forwards and backwards.
+
+After some postprocessing (easy to do with a bit of scripting) you get the list of symbols exported to the outside world.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Extracting symbols from source code}
+Extracting symbols from source code can easily be done using \texttt{ctags}, for example (edited for clarity):
+
+\begin{verbatim}
+$ ctags -f - -x fatent.c | grep EXPORT
+fat_free_clusters variable    634 fatent.c
+              EXPORT_SYMBOL_GPL(fat_free_clusters);
+\end{verbatim}
+
+These can then be stored in a database with their type (GPL symbol, or ``regular'' symbol).
+\end{frame}
+
+\frame{
+\frametitle{Extract metainformation from kernel modules}
+Some more information is needed for more sanity checking. This information can be obtained using \texttt{modinfo}:
+
+\begin{itemize}
+\item version: \texttt{modinfo -F version}
+\item license: \texttt{modinfo -F license}
+\item dependency information: \texttt{modinfo -F depends}
+\end{itemize}
+}
+
+\frame{
+\frametitle{Creating a graph (simplified)}
+For each collection of Linux kernel images and Linux kernel modules (for example: router firmware) do:
+
+\begin{enumerate}
+\item extract exported symbols from the kernel image and kernel modules
+\item extracted needed symbols from the kernel modules (not the Linux kernel, as it is always the end point of the graph)
+\item search for each symbol which module provides the symbol and record the dependency
+\item create edges between the kernel, modules and their dependencies
+\end{enumerate}
+
+Of course, there can be multiple kernel images on a system, which creates extra challenges.
+}
+
+\frame{
+\frametitle{Decorating a graph}
+Not every symbol is the same:
+
+\begin{itemize}
+\item ``regular'' symbols
+\item GPL kernel symbols
+\item unknown symbols
+\end{itemize}
+
+These can be recorded for each edge and there could be a different edge per symbol type.
+
+Dependency information can also be recorded as either there, or ``missing''.
+
+The license field can also be used to check if a proprietary driver uses GPL kernel symbols and decorate the node in the graph is something is wrong.
+}
+
+\frame{
+\frametitle{Using a database (1)}
+For the Binary Analysis Tool (BAT) I made a database with a lot of characteristics of source code that I can use when scanning binaries. I also recorded information about Linux kernel code:
+
+\begin{itemize}
+\item names of symbols
+\item Linux kernel version
+\item declared module license
+\item license in source code file
+\item etc.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Using a database (2)}
+When processing symbols I query the database for the following information:
+
+\begin{itemize}
+\item type of symbol
+\item Linux kernel version in case the symbol exists as both normal and GPL only to decide which to choose
+\end{itemize}
+
+This also circumvents the cases where vendors have redefined the symbol from \texttt{EXPORT\_SYMBOL\_GPL} to \texttt{EXPORT\_SYMBOL}.
+}
+
+\frame{
+\frametitle{Examples (1)}
+Let's look at a few examples. The edges can have different colours:
+
+\begin{itemize}
+\item black solid line: ``regular'' symbols
+\item red solid line: GPL only symbols
+\item blue solid line: unknown symbols
+\item black dotted line: declared dependency
+\item red dotted line: dependency not declared
+\end{itemize}
+}
+
+\frame{
+\frametitle{Examples (2)}
+  \begin{tikzpicture}[remember picture,overlay]
+   %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{linking-example}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Examples (3)}
+Let's walk through a few more examples.
+}
+
+\frame{
+\frametitle{Future work}
+
+\begin{itemize}
+\item sanity checking license field: it could be that some companies have changed the license field and it actually does not correspond with the license field that is in the actual source code.
+\item sanity checking dependencies: research whether or not there are screwups in the declared dependencies (cycles, etc.), although so far most cases I have seen are fairly clean
+\item your ideas!
+\end{itemize}
+}
+
+\frame{
+\frametitle{Availibility}
+The code to make these graphs is available as part of the Binary Analysis Tool (open source licensed). The database for creating these graphs can either be purchased from my company, or you can create your own database using the scripts in the Binary Analysis Tool.
+}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\frame{
+\frametitle{Contact}
+Any more questions? Feel free to contact me!
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}

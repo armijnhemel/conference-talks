@@ -1,0 +1,5 @@
+Slides of two talks I gave at LinuxCon Japan 2015.
+
+The first talk is about security and binary scanning. The second talk is about visualizing linking relationships between Linux kernel modules, with a specific focus on licenses.
+
+The directory "images" contains a set of graphs for the second talk.

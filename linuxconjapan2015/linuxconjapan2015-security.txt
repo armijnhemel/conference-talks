@@ -1,1 +1,0 @@
-Slides of a talk I gave at LinuxCon Japan 2015 about security.
