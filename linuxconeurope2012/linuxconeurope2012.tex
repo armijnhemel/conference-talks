@@ -1,0 +1,354 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{subfigure}
+\author{Rainer Koschke, University of Bremen \& Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{Yaminabe Revisited}
+\subtitle{A Case Study for Linux Variants of Consumer Electronic Devices}
+\date{November 5, 2012}
+
+\lstdefinestyle{numbers}
+    {basicstyle=\footnotesize,escapeinside='`, numbers=left, stepnumber=1, numberstyle=\footnotesize, numbersep=5pt}%,name=clones
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{The authors}
+  \begin{tikzpicture}[remember picture]
+    \node[yshift=0.0cm] at (current page.center)
+    %\node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dagstuhl}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{The original Yaminabe project}
+The Yaminabe research project was presented at LinuxCon Europe 2011 where Tsugikazu Shibata said the following:
+
+\begin{itemize}
+\item We expect there is a lot of non-upstream code in each industry product. However, is that true?
+\item For what part of the kernel, how many lines of codes and why?
+\item If we do not know anything, we are not be able to support them.
+\item So, we need some investigation.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Yaminabe scope}
+Yaminabe conducted a study of 15 ``Gingerbread'' smartphone from:
+
+\begin{itemize}
+\item HTC (12 devices)
+\item LG (1 device)
+\item Motorola (1 device)
+\item Samsung (1 device)
+\end{itemize}
+
+because of easy access to source code, a \textit{real} ``Gingerbread'' kernel (instead of ``Froyo'' kernel with ``Gingerbread'' userland) and market share.
+
+Due to sheer volume there will be quite a few HTC specific results.
+}
+
+\frame{
+\frametitle{Implementation of Yaminabe}
+
+\begin{enumerate}
+\item create a database with checksums of files from many kernels from \texttt{kernel.org} and the Android project (193 in total). This includes kernels later than 2.6.35 because of backporting and forwardporting of patches.
+\item for each handset kernel remove all files that can be found in any of the upstream kernels
+\item for each file left determine if any of the other handset kernels has a file with the exact same name and different checksum
+\end{enumerate}
+
+The result is a list of files that have the same name, are different, which can't be found in an upstream kernel and which are in at least two different devices, so likely to be duplicate effort!
+}
+
+\frame{
+\frametitle{Results of Yaminabe}
+\begin{itemize}
+\item each kernel has about 5\% to 10\% files that are different from upstream (except the Motorola device: 0\%)
+\item there was plenty of duplicate effort. Mostly these were expected changes (driver code, board specific code), but also quite a few changes in the \textit{core kernel}.
+\end{itemize}
+
+The Yaminabe project gave enough reasons to start the ``Long Term Support Initiative''.
+}
+
+\frame{
+\frametitle{Drawbacks of the Yaminabe project}
+Yaminabe has a strong emphasis on checksums, not on actual differences. This is very fast, but it treats every change (including whitespace change) as equally important.
+
+But not every change is equally important! Changed code is more important than whitespace changes (this is not Python!) or changed comments.
+
+We need something more fine grained.
+}
+
+\frame{
+\frametitle{Introducing Yaminabe 2}
+Yaminabe 2 started at Dagstuhl Seminar 12071 in Germany (``Software Clone Management Towards Industrial Application'') where prof. Rainer Koschke and I discussed using \textit{code clone detection} for large-scale variance analysis.
+
+In classic clone detection the goal is to discover copies of code.
+
+Here not the clones themselves, but the \textit{differences} are relevant.
+
+Differences, especially duplicated work, could indicate cloning at a higher level, namely \textit{cloning of work effort}. To relate non-identical yet similar files to each other we use clone detection.
+}
+
+\frame{
+\frametitle{Yaminabe 2 as a code clone detection problem}
+We combined the original Yaminabe approach with clone detection. Yaminabe acts as a ``filter'' to get rid of ``uninteresting'' files and \textit{shrink the problem space} significantly.
+
+Using a code clone detector from Axivion (\url{http://www.axivion.com/}) called ``codematches'' the remaining files were researched for similarity.
+
+Results were presented at Working Conference on Reverse Engineering (WCRE) 2012.
+}
+
+\defverbatim[colored]\whileA{%
+\begin{lstlisting}[language=C, style=numbers]
+int foo(int a, int i){
+  while (i > 0) {
+     a = a * i;
+     i++;
+  }
+  return a;
+}
+\end{lstlisting}}
+
+\defverbatim[colored]\whileB{%
+\begin{lstlisting}[language=C, style=numbers]
+int foo(int x, int i){
+  while (i > 0) {
+     x = x * i;
+     i++;
+  }
+  return x;
+}
+\end{lstlisting}}
+
+\frame{
+\frametitle{Tokens \& similarity}
+To compare the files they are first tokenized, where some information is discarded:
+
+\begin{itemize}
+\item whitespace
+\item comments
+\item identifier names (rewritten to generic names)
+\item values of literals
+\item and so on
+\end{itemize}
+
+then the tokens are hashed.
+
+In short: it abstracts from the concrete names of identifiers and values of literals.
+    
+If two files have the same hash value, they are token-type identical, or short: t-identical.
+}
+
+\frame{
+\frametitle{Two t-identical files}
+  \begin{columns}
+    \begin{column}{0.1\textwidth}
+      
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      File $f_1$
+
+      \begin{minipage}{0.5\textwidth}
+        \whileA      
+      \end{minipage}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      File $f_2$
+
+      \begin{minipage}{0.5\textwidth}
+        \whileB
+      \end{minipage}
+    \end{column}
+  \end{columns}
+}
+
+\begin{frame}[t]
+\frametitle{File Similarity}
+
+  \hspace{13ex}\scalebox{0.44}{\input{figures/similarity.xtex}}
+  
+  \only<2-3>{
+  \[
+  \textit{tsim}(f_1, f_2) = \frac{|\{t| t \in f_1 \wedge t \in         
+  \textit{clone}(f_1,f_2)\}|}{|f_1|}
+   \visible<3>{= \frac{34}{40}}
+    \]
+  }
+
+  \only<6-7>{
+    \[
+    \textit{psim}(f_1, f_2) = \frac{|\textit{parameters}(f_1) \cap \textit{parameters}(f_2)|}{|\textit{parameters}(f_1) \cup \textit{parameters}(f_2)|}
+    \visible<7>{= \frac{|\{x,y,z,v\}|}{|\{a,b,x,y,z,v\}|}}
+    \]}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Similarity Criterion}
+  
+  \begin{gather*}
+    (tsim(f_1,f_2) \geq 0.7 \vee tsim(f_2,f_1) \geq 0.7) \wedge
+    psim(f_1,f_2) \geq 0.75
+  \end{gather*}
+  
+  \note{
+    
+    The criterion we chose for sufficient similarity between two files
+    is shown here. 
+
+    One file must be subsumed by the other file by at least 70\,\% and
+    their parameters must overlap at least by 75\,\%.
+
+  }
+\end{frame}
+
+\frame{
+  \begin{tikzpicture}[remember picture]
+    \node[yshift=0.0cm] at (current page.center)
+    %\node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{approach}
+    };
+  \end{tikzpicture}
+}
+
+\begin{frame}[fragile]
+\frametitle{Top-14 files with highest number of variants}
+
+\begin{tabular}{|l|r|r|}
+\hline
+path & modified & similar \\
+\hline
+\textit{drivers/mmc/core/core.c} & 12 & 4\\
+\textit{drivers/usb/gadget/android.c} & 12 & 1\\
+\textit{drivers/usb/gadget/composite.c} & 12 & 2\\
+\textit{drivers/mmc/card/block.c} & 11 & 4\\
+\textit{drivers/usb/gadget/f\_mass\_storage.c} & 11 & 2\\
+\textit{drivers/mmc/core/mmc.c} & 10 & 9\\
+\textit{drivers/mmc/host/msm\_sdcc.c} & 10 & 8\\
+\textit{include/linux/mmc/host.h} & 10 & 10\\
+\textit{arch/arm/mach-msm/devices\_htc.c} & 9 & 0\\
+\textit{drivers/cpufreq/cpufreq\_ondemand.c}  & 9 & 8\\
+\textit{drivers/mmc/host/msm\_sdcc.h} & 9 & 8\\
+\textit{drivers/net/wireless/bcm4329\_204/wl\_iw.c} & 9 & 1\\
+\textit{drivers/video/msm/msm\_fb.c}  & 9 & 1\\
+\textit{kernel/power/wakelock.c} & 9 & 1\\
+\hline
+\end{tabular}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Top-14 files with highest number of variants (resorted)}
+
+\begin{tabular}{|l|r|r|}
+\hline
+path & modified & similar \\
+\hline
+\textit{arch/arm/mach-msm/devices\_htc.c} & 9 & 0\\
+\textit{drivers/usb/gadget/android.c} & 12 & 1\\
+\textit{drivers/video/msm/msm\_fb.c}  & 9 & 1\\
+\textit{drivers/net/wireless/bcm4329\_204/wl\_iw.c} & 9 & 1\\
+\textit{kernel/power/wakelock.c} & 9 & 1\\
+\textit{drivers/usb/gadget/composite.c} & 12 & 2\\
+\textit{drivers/usb/gadget/f\_mass\_storage.c} & 11 & 2\\
+\textit{drivers/mmc/core/core.c} & 12 & 4\\
+\textit{drivers/mmc/card/block.c} & 11 & 4\\
+\textit{drivers/mmc/host/msm\_sdcc.c} & 10 & 8\\
+\textit{drivers/cpufreq/cpufreq\_ondemand.c}  & 9 & 8\\
+\textit{drivers/mmc/host/msm\_sdcc.h} & 9 & 8\\
+\textit{drivers/mmc/core/mmc.c} & 10 & 9\\
+\textit{include/linux/mmc/host.h} & 10 & 10\\
+\hline
+\end{tabular}
+\end{frame}
+\frame{
+\frametitle{Most-Varied Subsystems}
+
+\begin{itemize}
+\item MultiMediaCard (MMC)
+\item USB gadget driver
+\item Touchscreen input drivers
+\item Others: limited differences in other input drivers, memory management, YAFFS2, network drivers
+\end{itemize}
+}
+
+\begin{frame}
+\frametitle{Missed Defect Correction}
+
+  \begin{center}
+    \includegraphics[width=1.0\textwidth]{figures/bugfix}
+  \end{center}
+
+  \note{
+
+    We also found a case where the vendors have missed a bug fix.
+    A bug fix to a memory management problem was posted in October
+    2010. This bug fix was applied to an HTC device in March 2011 for
+    the first time. After that it was also applied to other HTC
+    devices, except for the Droid Incredible 2. Despite the fact that
+    this device was still maintained, indicated by a different change
+    in July 2011.
+
+  }
+
+\end{frame}
+
+\frame{
+\frametitle{Future research (1)}
+Yaminabe 2 gave much more fine grained results, but it is not enough:
+
+\begin{itemize}
+\item same criteria used for all parts of the kernel: for some subsystems (like the core kernel) changes are much more significant than for other parts. What are good thresholds?
+\item ``dead code'' (code that might have been changed, but is not used in the final binary and just left to bitrot) is not removed. Changes that are irrelevant might be reported.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Future research (2)}
+Other open research questions are:
+
+\begin{itemize}
+\item How much have vendors improved? Is more code being upstreamed?
+\item Are there any vendor specific patches that are ported between generations of devices that are not upstreamed?
+\end{itemize}
+}
+
+\begin{frame}
+\frametitle{Conclusions}
+  
+  \begin{itemize}
+  \item many variances introduced by handset manufacturers
+  \item some expected (handset specifics), some unexpected (core
+    kernel)
+  \item combination of file hashing and zooming in with inter-system
+    clone detection finds:
+    \begin{itemize}
+    \item highly dissimilar/variant path-identical files: integration
+      difficulties
+    \item highly similar path-identical files: local patches or
+      missed patches
+    \end{itemize}
+  \item handset manufacturers fail(ed) syncing changes in the mainline
+%  \item no found case where changes of HTC were backported to mainline
+  \item better communication and collaboration among kernel and
+    headset developers needed
+  \end{itemize}
+\end{frame}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\end{document}

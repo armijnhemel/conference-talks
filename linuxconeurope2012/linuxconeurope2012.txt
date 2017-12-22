@@ -1,0 +1,1 @@
+Slide of a talk I gave at LinuxCon Europe 2012. This talk mentions "Yaminabe 2" but it is not the Yaminabe 2 project as worked on later, but more like a "Yaminabe 1.5".
