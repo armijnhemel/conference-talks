@@ -1,0 +1,7 @@
+Slides for a talk I gave at FSFE's Legal & Licensing Workshop 2016. It describes the Yaminabe2 project that was presented at ELC2016:
+
+https://elinux.org/Yaminabe2
+
+Research was done together with Mr Munakata from Renesas. His presentation from ELC 2016 can be found here:
+
+https://elinux.org/ELC_2016_Presentations
