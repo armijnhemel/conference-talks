@@ -1,0 +1,1 @@
+Slides for a talk I gave about analysing binaries at the Embedded Linux Conference Europe 2010 while still working at Loohuis Consulting (now defunct).
