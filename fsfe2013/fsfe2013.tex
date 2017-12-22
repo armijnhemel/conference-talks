@@ -1,0 +1,372 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel\\Tjaldur Software Governance Solutions}
+\title{Research into dynamically linked ELF executables/libraries}
+\date{April 5, 2013}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{Scope of talk}
+I researched dynamically linked ELF files:
+
+\begin{itemize}
+\item find errors in code and build scripts
+\item see if by accident derivative works are created
+\end{itemize}
+
+Focus today is on legal issues. The presented research and methods are experimental.
+} 
+
+\frame{
+\frametitle{Dynamic linking: legal debate}
+The GPL license talks about ``derivative works''.
+
+It is unclear if dynamic linking creates a derivative work and if the GPL
+``spreads by linking''. Opinions are divided about this.
+}
+
+\frame{
+\frametitle{Linking Schminking}
+  %\begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=-0.3cm] at (current page.center)
+    %{
+    %  \pgfimage[width=\linewidth]{larry1}
+    %};
+  %\end{tikzpicture}
+\begin{center}\includegraphics[width=0.7\columnwidth]{larry1}\end{center}
+}
+
+\frame{
+\frametitle{My goal today}
+
+\begin{itemize}
+\item leave you with a better understanding of how dynamic linking works (and sometimes not works)
+\item hopefully kickstart a debate where we can get more clarity
+\end{itemize}
+
+And now the fun technical stuff!
+}
+
+\frame{
+\frametitle{What is ELF?}
+ELF is the ``Executable and Linkable Format''. It is (for now) the most widely used form for binaries on Linux and other Unix(-like) systems.
+
+ELF allows ``dynamic linking'': an executable is combined at \textit{run time} with libraries to create a runnable program.
+}
+
+\frame{
+\frametitle{Why dynamic linking?}
+Dynamic linking has advantages:
+
+\begin{itemize}
+\item sharing code between programs at run time to reduce memory usage
+\item easier to do upgrades for all programs that use a particular library
+\item easier to do replacements with alternatives with the same binary interface
+\item use less disk/flash space
+\end{itemize}
+}
+
+\frame{
+\frametitle{How dynamic linking works (simplified)}
+
+\begin{enumerate}
+\item during \textit{build time} symbols (function names, variables) that a program
+needs from a library at \textit{run time} are recorded in the binary as ``undefined''.
+\item a list of libraries needed at run time is recorded into the binary.
+\item at run time the symbols that are ``undefined'' are resolved by a program
+called the ``dynamic linker'', which uses the list of declared dependencies to
+find libraries that could possibly have the needed symbols.
+\end{enumerate}
+
+Important: build time and run time environments can be \textit{different}.
+
+It works in most situations, but it is a bit fragile (and out of scope for this
+talk).
+}
+
+\begin{frame}[fragile]
+\frametitle{Discovering \textit{declared} dependencies}
+
+\begin{verbatim}
+$ readelf -a busybox | grep NEEDED
+ 0x00000001 (NEEDED)   Shared library: [libutility.so]
+ 0x00000001 (NEEDED)   Shared library: [libnvram.so]
+ 0x00000001 (NEEDED)   Shared library: [libapcfg.so]
+ 0x00000001 (NEEDED)   Shared library: [libaplog.so]
+ 0x00000001 (NEEDED)   Shared library: [libcrypt.so.0]
+ 0x00000001 (NEEDED)   Shared library: [libgcc_s.so.1]
+ 0x00000001 (NEEDED)   Shared library: [libc.so.0]
+\end{verbatim}
+
+NB: many developers think that this list indicates whether or not something is
+a derivative work.
+\end{frame}
+
+\frame{
+\frametitle{Undefined symbols}
+Simplified version: two types of symbols are resolved at \textit{run time}:
+
+\begin{itemize}
+\item functions
+\item variables
+\end{itemize}
+
+These are recorded as \textit{undefined} symbols in the binary at \textit{build time}
+}
+
+\begin{frame}[fragile]
+\frametitle{Discovering undefined function symbols}
+\begin{verbatim}
+$ readelf -W --dyn-syms busybox  | grep FUNC | grep UND
+...
+17: 0044e620 148 FUNC GLOBAL DEFAULT UND sigprocmask
+21: 0044e610 564 FUNC GLOBAL DEFAULT UND free
+22: 0044e600  72 FUNC GLOBAL DEFAULT UND raise
+23: 00000000  24 FUNC GLOBAL DEFAULT UND xdr_int
+24: 0044e5f0  64 FUNC GLOBAL DEFAULT UND tcsetpgrp
+25: 0044e5e0  80 FUNC GLOBAL DEFAULT UND strpbrk
+...
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Discovering defined function symbols}
+\begin{verbatim}
+$ readelf -W --dyn-syms busybox  | grep FUNC | grep -v UND
+...
+11: 0044b2f8 228 FUNC GLOBAL DEFAULT 10 getgrent_r
+18: 0044695c 144 FUNC GLOBAL DEFAULT 10 print_login_prompt
+20: 0044a830 164 FUNC GLOBAL DEFAULT 10 bb_do_delay
+27: 004477a0 780 FUNC GLOBAL DEFAULT 10 bb_parse_mode
+...
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{Discovering defined and undefined variable symbols}
+
+Like function names, except replace \texttt{FUNC} with \texttt{OBJECT}.
+}
+
+\frame{
+\frametitle{Resolving manually}
+Resolving these symbols manually is actually quite easy!
+
+\begin{enumerate}
+\item get list of \textit{declared} dependencies for a binary, such as \texttt{busybox}
+\item get list of \textit{undefined} symbols from said binary
+\item for each of the declared dependencies (libraries, etc.) get a list of \textit{defined} symbols
+\item match undefined symbols from the binary with defined symbols of the dependencies
+\item stop when all dependencies are resolved, or when all dependencies have been scanned
+\item report leftover symbols, or superfluous dependencies
+\end{enumerate}
+
+Of course, actual bookkeeping is a little bit trickier than this.
+}
+
+\frame{
+\frametitle{Example: Trendnet TEW-636APB}
+The Trendnet TEW-636APB is a wireless access point. Originally the device was
+made by Sercomm from Taiwan.
+
+The firmware is a complete update: the whole flash is overwritten during the
+update, so we have the complete operating system, libraries, and so on, in the
+firmware update.
+
+It has a GPL source code release, so we can verify our findings in the build
+scripts and source code.
+
+The example program used is BusyBox.
+}
+
+\begin{frame}[fragile]
+\frametitle{Declared dependencies of BusyBox in the TEW-636APB}
+
+\begin{verbatim}
+$ readelf -a busybox | grep NEEDED
+ 0x00000001 (NEEDED)   Shared library: [libutility.so]
+ 0x00000001 (NEEDED)   Shared library: [libnvram.so]
+ 0x00000001 (NEEDED)   Shared library: [libapcfg.so]
+ 0x00000001 (NEEDED)   Shared library: [libaplog.so]
+ 0x00000001 (NEEDED)   Shared library: [libcrypt.so.0]
+ 0x00000001 (NEEDED)   Shared library: [libgcc_s.so.1]
+ 0x00000001 (NEEDED)   Shared library: [libc.so.0]
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{License of libraries}
+Some of the declared dependencies have no corresponding source code available,
+so it has to be assumed that these are proprietary closed source libraries:
+
+\begin{itemize}
+\item \texttt{libutility.so}
+\item \texttt{libnvram.so}
+\item \texttt{libapcfg.so}
+\item \texttt{libaplog.so}
+\end{itemize}
+
+This would mean that there is likely a license violation!
+
+Or is there?
+}
+
+\frame{
+\frametitle{Analysis using resolving symbols}
+The method described above reports that \texttt{libnvram.so} and
+\texttt{libaplog.so} are \textit{not used} by BusyBox (but they \textit{are}
+needed on the system to satisfy the dynamic linker).
+
+Manual verification of the BusyBox binary and the libraries \textit{confirms}
+this.
+
+The other proprietary libraries (\texttt{libutility.so} and
+\texttt{libapcfg.so}) \textit{are} used by BusyBox, so there is still a license
+violation (in my opinion).
+}
+
+\frame{
+\frametitle{Recursively resolving dependencies}
+\texttt{libnvram.so} and \texttt{libaplog.so} could still be used by the other
+libraries!
+
+Further inspection reveals that \texttt{libnvram.so} actually \textit{is} used
+by \texttt{libapcfg.so}, so this library now also is likely covered by the GPL.
+
+But they are not used by BusyBox \textit{directly}! A different implementation
+of \texttt{libapcfg.so} might not use \texttt{libnvram.so} at all, but still
+have the same interface towards BusyBox, so these dependencies should not be in
+BusyBox!
+}
+
+\frame{
+\frametitle{Picture even Shane can understand}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dot-busybox}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Analysing the source}
+There are two places in the BusyBox source code where the dependencies on the
+unused libraries are defined:
+
+\begin{enumerate}
+\item \texttt{Rules.mak}: \texttt{LIBRARIES+= -lutility -lnvram -lapcfg -laplog}
+\item \texttt{shell/sercommCli.c} includes \texttt{../../include/apcfg.h} which
+in turn includes \texttt{nvram.h} and \texttt{utility.h} which are the header
+files for the libraries.
+\end{enumerate}
+
+\texttt{Rules.mak} causes the dependencies to be recorded in the
+\texttt{busybox} binary. The second one is discarded by the compiler (since
+nothing from the libraries is used) and irrelevant.
+}
+
+\frame{
+\frametitle{The role of the compiler}
+Most compilers are smart and do not generate bytecode for unused code or
+record function names or variable names of unused code.
+
+If binary code that is linked with is only known at \textit{run time} the
+compiler cannot do these checks.
+}
+
+\frame{
+\frametitle{The bigger picture}
+Question: Are there any more pitfalls, for example dependencies that are \textit{undeclared} and hidden?
+
+Answer: yes.
+}
+
+\frame{
+\frametitle{The bigger picture (literally): hidden dependencies}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.1cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dot-busybox2}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Going even further}
+What else could happen?
+
+\begin{itemize}
+\item two libraries that offer the same symbols, and both are declared dependencies (I have seen examples in the wild)
+\item libraries that do not implement all symbols that are needed (leading to undefined behaviour at run time)
+\end{itemize}
+
+But this is future work.
+}
+
+\frame{
+\frametitle{Isolated incident or common problem?}
+I analysed more firmwares and found the same issue (or unspecified
+dependencies) in nearly all firmwares in one or more binaries.
+
+So it is actually a widespread problem!
+}
+
+\frame{
+\frametitle{Derivative work: yes or no}
+Does dynamic linking \textit{always} make a program a derivative work? Is
+the mere fact something is dynamically linked strong enough?
+
+After all, undeclared dependencies recorded in the binary are needed at run
+time otherwise the program \textit{will not start}.
+
+}
+
+\frame{
+\frametitle{Solutions}
+There are several solutions to these bogus dependencies:
+
+\begin{itemize}
+\item fix the code and rebuild the software, verify until it is clean
+\item use \textit{patchelf} to remove/change/add dependencies and verify the programs still run. This is the only solution if you don't have the source code to rebuild.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Future research}
+
+Detection and picture generation is already in the Binary Analysis Tool,
+but needs work to deal with edge cases. Future work includes:
+
+\begin{itemize}
+\item detecting unfulfilled dependencies
+\item detecting duplicate dependencies (different libraries, same symbols, all dependencies)
+\item analysing more firmwares
+\item expanding to other languages (for example Java)
+\item decorating the graph with more information (licensing, etc.)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Contact}
+
+Any questions? Feel free to contact me!
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+
+}
+
+\end{document}

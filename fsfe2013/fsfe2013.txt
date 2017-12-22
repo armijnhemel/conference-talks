@@ -1,0 +1,7 @@
+These are the slides I gave at FSFE's Legal & Licensing Workshop in 2013 about dynamic linking.
+
+The talk was covered on LWN.net:
+
+https://lwn.net/Articles/548216/
+
+The person in the talk is Larry Rosen, who is of the opinion that linking does not necessarily create a derivative work. His picture is included as a joke to provoke discussion. It is not an endorsement or rejection of his views. More discussion is needed.
