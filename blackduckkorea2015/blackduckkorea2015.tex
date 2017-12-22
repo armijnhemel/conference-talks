@@ -1,0 +1,356 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{kotex}
+\author{헤멜 아마인\\Armijn Hemel, MSc\\Tjaldur Software Governance Solutions\\\url{armijn@tjaldur.nl}}
+\title{Inside the Binary Analysis Tool}
+\date{June 5, 2015}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+\begin{itemize}
+\item owner Tjaldur Software Governance Solutions
+\item creator of Binary Analysis Tool (BAT)
+\item studied computer science at Utrecht University (The Netherlands)
+\item using open source software since 1994
+\item part of coreteam of \url{gpl-violations.org} from 2005-2012, gaining very detailed knowledge about enforcement practices and supply chain issues
+\end{itemize}
+}
+
+\frame{
+\frametitle{About Tjaldur Software Governance Solutions}
+\begin{itemize}
+\item tooling (BAT, source code scanning)
+\item research (provenance, build tracing, audit techniques, supply chain issues)
+\item GPL compliance engineering (Patrick McHardy cases, BusyBox cases)
+\item audits (for OSADL and others)
+\end{itemize}
+}
+
+\frame{
+\frametitle{About this presentation}
+This presentation is to show backgrounds of and techniques behind the Binary Analysis Tool:
+
+\begin{itemize}
+\item why to use tools like BAT
+\item better understanding of what to expect from BAT
+\item know where strong points and weak points are in BAT
+\item know where BAT will go in the (near) future
+\end{itemize}
+}
+
+\frame{
+\frametitle{Binary Analysis Tool background}
+BAT was started with the following goals in mind:
+
+\begin{itemize}
+\item demystify compliance engineering by codifying knowledge
+\item make it easier to have reproducable results
+\item create common language for binary analysis
+\item only analyse binaries, but draws no legal conclusions
+\end{itemize}
+
+Development started in late 2009. The first version was released in early 2010. The latest version is BAT 21.
+}
+
+\frame{
+\frametitle{Why analyse binaries?}
+
+\begin{itemize}
+\item software is often supplied in binary form by vendors (on a device/CD/DVD/flash chip/download/app). Sometimes source code is supplied and sometimes it might match the binary.
+\item between companies (for example in a supply chain) software is often shipped as binaries
+\item even \textit{inside} companies software is frequently shipped as binaries
+\end{itemize}
+
+Shipping software as source code is the \textit{exception}.
+
+If you pass on binary software that you get from upstream (for example 3rd party software in a product) you \textit{have} to know what you ship, for compliance, security, and so on. This means you have to analyse the binaries.
+}
+
+\frame{
+\frametitle{Typical use case for Tjaldur Software Governance Solutions}
+Often I am approached by companies in the consumer electronics/industrial automation space that want to know what their supplier has given them:
+
+\begin{itemize}
+\item presence of any GPL programs (recently especially focusing on programs written by Patrick McHardy)
+\item presence of any GPL code in proprietary applications
+\item presence of security bugs
+\end{itemize}
+
+And they need to know yesterday\dots
+}
+
+\frame{
+\frametitle{What is a binary?}
+A ``binary file'' could mean several things:
+
+\begin{itemize}
+\item single executable or library file
+\item firmware of a (consumer electronics) device (containing many executables and library files)
+\item a random blob of data
+\item etcetera
+\end{itemize}
+
+When analysing binaries (any of the above) it is important to find out what is inside.
+}
+
+\frame{
+\frametitle{Finding out what is inside a binary: firmware}
+A firmware for a device (router, IP camera, tablet, IVI system, industrial controller, TV, HVAC, etc) has a structure:
+
+\begin{itemize}
+\item compressed files
+\item file systems
+\item plain files
+\item ``padding'' (data that is not used during execution to fill up space so different partitions are aligned correctly)
+\end{itemize}
+
+These can be found by looking for certain patterns. After that the contents can be extracted, possibly recursively (file system inside compressed file inside an installer, on a CD image), until all contents have been extracted.
+}
+
+\frame{
+\frametitle{Extraction steps (firmware)}
+
+\begin{enumerate}
+\item search for known identifiers like start of a file system or start of a compressed file
+\item carve possible candidate files (file systems, compressed files)  out of the firmware
+\item extract contents of candidate files and verify if this was done correctly
+\item for every file extracted successfully from the candidate files go to 1.
+\end{enumerate}
+
+After completing these steps all contents are extracted. This can be done manually, but BAT already can do this automatically for you for 35+ file systems, compression methods, media formats, and so on.
+}
+
+\frame{
+\frametitle{Finding out what is inside a binary: individual files (1)}
+After extraction individual files can be examined. For compliance and security research the most interesting files are:
+
+\begin{itemize}
+\item executables
+\item libraries
+\end{itemize}
+
+For compliance ``dynamic linking interaction'' is also interesting.
+
+For security other files are also interesting:
+
+\begin{itemize}
+\item password files
+\end{itemize}
+
+The focus today is on executables and libraries.
+}
+
+\frame{
+\frametitle{Finding out what is inside a binary: individual files (2)}
+There are several methods that can be used to determine what is inside an executable or library:
+
+\begin{enumerate}
+\item decompilation of binary code into source code, followed by comparison to known source code
+\item extraction of identifiers from binary code, followed by comparison of identifiers extracted from source code
+\end{enumerate}
+
+The first method reveals the most information like (partial) control flow, but is more difficult to get right: information about the compiler and compiler flags needs to be known.
+
+The second method is much more simple: information that is used (string literals, function names, etc.) can very easily be extracted using standard tools and is (largely) platform independent.
+
+BAT uses the second method. This is also the method that many compliance engineers and license enforcers use (but manually)
+}
+
+\frame{
+\frametitle{Extraction of identifiers from a binary}
+For Java (including DEX/ODEX formats) a lot of information (including type information) is kept inside the binary file and there are tools to extract this:
+
+\begin{itemize}
+\item \texttt{jcf-dump} for regular Java class files
+\item Dedexer for Android DEX/ODEX files
+\end{itemize}
+
+For ELF files information can be extracted easily as well:
+
+\begin{itemize}
+\item \texttt{strings} to extract string literals (from certain ELF sections, without typing information, so comes with some false positives)
+\item \texttt{readelf} to extract information about functions and variables from dynamically linked files
+\end{itemize}
+
+Often hundreds, or even thousands of identifiers can be extracted.
+}
+
+\frame{
+\frametitle{Extraction of identifiers from source code}
+Identifiers in source code can be extracted using standard tools that work for source code written in many programming languages:
+
+\begin{itemize}
+\item \texttt{xgettext} to find extract string literals (output messages, debug messages, etc.)
+\item \texttt{ctags} to find function names, method names, variable names, etc.
+\end{itemize}
+
+These tools do a really good job, but miss information in some cases. In those situations using a proper source code parser would be better.
+
+For BAT I store this information (with a lot more meta-information) in a database for easier lookups.
+}
+
+\frame{
+\frametitle{Advantages of using fingerprinting instead of decompilation}
+Fingerprinting has a few big advantages:
+
+\begin{itemize}
+\item straightforward: if needed it could be done manually, but it is also very well suited for automation (BAT does all the bookkeeping for you)
+\item platform independent: for extraction of many types of identifiers no platform specific knowledge is needed
+\item ``good enough\dots'': for most uses (detection if a particular package is used or \textit{likely} used) it does the job very well
+\end{itemize}
+}
+
+\frame{
+\frametitle{Drawbacks of using fingerprinting instead of decompilation}
+but also drawbacks:
+
+\begin{itemize}
+\item ``\dots but not perfect'': if there are no identifiers that can be extracted the method fails. For detection of snippets of code without identifiers it will not work well.
+\item fairly easy to circumvent: changing identifiers will avoid detection
+\end{itemize}
+
+In the vast majority of \textit{current day} cases these drawbacks are not a problem: often hundreds, or thousands of identifiers can be found in binaries and matched to known source code, down to the package version level.
+}
+
+\frame{
+\frametitle{Defeating BAT (and why you do not want to) (1)}
+The techniques in BAT are quite easy to defeat:
+
+\begin{itemize}
+\item change string literals
+\item change function names/variable names
+\end{itemize}
+
+But you don't want to do this.
+}
+
+\frame{
+\frametitle{Defeating BAT (and why you do not want to) (2)}
+Circumvention is not very difficult, but it comes at a price:
+
+\begin{itemize}
+\item increases engineering, integration and testing costs
+\item circumvention could create \textit{higher} risk for companies, because by circumventing they acknowledge they knew what is inside the software
+\item a company can still get caught by people who \textit{do} use more advanced reverse engineering techniques (recent example: Allwinner Technology)
+\item circumvention is not for leaders, only for followers. Circumvention means playing ``catch up'' and not using the full potential of open source.
+\end{itemize}
+
+Circumvention could turn out to be \textit{more} expensive than having a good software lifecycle management/compliance process. Consumer electronics is cost sensitive, so this does not happen (much).
+}
+
+\frame{
+\frametitle{BAT database}
+For the fingerprinting BAT uses a database. Tjaldur Software Governance Solutions has a database with information from over 180,000 open source packages. Information includes:
+
+\begin{itemize}
+\item meta information (package, version, checksums)
+\item string literals
+\item function names, method names
+\item variable names
+\item Linux kernel specific information
+\end{itemize}
+}
+
+\frame{
+\frametitle{BAT \& Protex}
+Very soon Black Duck will start offering BAT (plus database) as an option in Protex (certain platforms only).
+
+For more information, please talk to Black Duck directly.
+}
+
+\frame{
+\frametitle{Challenges when analysing binaries}
+\begin{itemize}
+\item finding structure: encryption, obfuscation, new/strange file systems
+\item less information available: compilers discard a lot of useful information
+\item internationalization: more and more code are using other languages than Western languages in identifiers. Finding out automatically in which encoding some data is is difficult.
+\item clones: code is copied around more and more, making it more difficult to see which software package was actually used (not unique to BAT or binary files)
+\item interpretation of data: because of above points results can be ``fuzzy'' and (manual) interpretation is time consuming
+\end{itemize}
+}
+
+\frame{
+\frametitle{BAT future}
+
+\begin{itemize}
+\item closing the gap between binary scanning and source code scanning
+\item increased focus on security
+\item combining (more) copyright information
+\item increasing quality of matches
+\end{itemize}
+}
+
+\frame{
+\frametitle{Closing the gap between binary and source code scanning}
+By using information from build systems when building a binary it is possible to get a very exact view of what is used. I want to combine this with other information (licensing, copyrights, security, etcetera), and unlock this in an easy way.
+}
+
+\frame{
+\frametitle{Increased focus on security}
+Currently I am working on a project for the Dutch government to adapt BAT for security scanning. Several improvements for this are coming in BAT 22.
+
+Ask me about more details later!
+}
+
+\frame{
+\frametitle{Combining (more) copyright information}
+At the moment BAT does not use copyright information, but this might be needed in the future:
+
+\begin{itemize}
+\item increased focus on copyright information/attribution in some of the German enforcement cases
+\item overlooked area of compliance, with a lot of (legal) unclarity
+\end{itemize}
+
+Issues:
+
+\begin{itemize}
+\item very difficult to correctly extract copyright information
+\item information about copyrights/authorship could be outside of the source code
+\end{itemize}
+}
+
+\frame{
+\frametitle{Increasing quality of matches}
+Code cloning (copied code) is a problem for current BAT. For BAT 22 improvements are planned that will address this:
+
+\begin{itemize}
+\item automatically finding copies in the BAT database
+\item (slowly) moving away from package level detection to file level detection
+\end{itemize}
+}
+
+\frame{
+\frametitle{Conclusion}
+In this talk you have seen:
+
+\begin{itemize}
+\item why to use tools like BAT
+\item what to expect from BAT
+\item where strong points and weak points are in BAT
+\item where BAT will go in the (near) future
+\end{itemize}
+}
+
+\frame{
+\frametitle{Q\&A and discussion}
+}
+
+\frame{
+\frametitle{감사합니다!}
+
+\begin{itemize}
+\item BAT: \url{http://www.binaryanalysis.org/}
+\item Tjaldur Software Governance Solutions: \url{http://www.tjaldur.nl/}
+\item Contact: \url{armijn@tjaldur.nl}
+\end{itemize}
+}
+
+\end{document}
