@@ -1,0 +1,571 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions}
+\title{Introducing the Binary Analysis Tool}
+\date{November 14, 2013}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item owner Tjaldur Software Governance Solutions
+\end{itemize}
+}
+
+\frame{
+\frametitle{Binary Analysis Tool}
+Binary Analysis Tool (or: BAT) is a lightweight tool under an open source license that automates binary analysis.
+
+\begin{itemize}
+\item demystify compliance engineering by codifying knowledge
+\item make it easier to have reproducable results
+\item common language for binary analysis
+\item only analyses binaries, but draws no legal conclusions
+\end{itemize}
+
+Although BAT is a generic framework for binary analysis my focus is on software license compliance.
+
+Important: a license violation is not a technical issue, but a legal issue. Technical measures are only used to obtain evidence.
+
+BAT 15 was released on October 10 2013.
+}
+
+\frame{
+\frametitle{Why analyse binaries?}
+
+\begin{itemize}
+\item software is often supplied in binary form by vendors (on a device/CD/DVD/flash chip/download/app). Sometimes source code is supplied and if you're lucky it might match the binary.
+\item even between companies (for example in a supply chain) software is often shipped as binaries
+\end{itemize}
+
+Shipping software as source code is the \textit{exception}.
+
+If you pass on binary software that you get from upstream (for example 3rd party software in a product) you \textit{have} to know what you ship! This means you have to analyse the binaries.
+}
+
+\begin{frame}[fragile]
+\frametitle{What's in this blob?}
+
+{\scriptsize\color{blue}{
+\begin{verbatim}
+00000000  50 4b 03 04 14 00 00 00  08 00 29 52 57 3c fa c0  |PK........)RW<..|
+00000010  03 a7 26 9e 16 01 f4 ae  19 01 15 00 00 00 76 31  |..&...........v1|
+00000020  2e 31 2e 31 2e 31 37 5f  53 4d 43 5f 61 6c 6c 2e  |.1.1.17_SMC_all.|
+00000030  65 78 65 ec 3a 6d 78 53  55 9a f7 26 69 9a 42 ca  |exe.:mxSU..&i.B.|
+00000040  0d d0 38 65 69 30 60 50  94 96 56 43 91 98 06 03  |..8ei0`P..VC....|
+00000050  92 18 9f e1 e3 d6 c8 4d  03 f4 03 69 6b b8 a3 88  |.......M...ik...|
+00000060  78 2f 83 da 76 c3 a6 d9  6d 7a 37 0f 38 8b 33 ae  |x/..v...mz7.8.3.|
+00000070  33 ce d0 89 ee 8a f8 38  ae 3a 88 1f 30 61 c2 52  |3......8.:..0a.R|
+00000080  3a ea 33 ac e3 02 0e 3c  b3 38 ea ee e9 a4 ce d4  |:.3....<.8......|
+00000090  85 2d 01 0b 77 df f7 dc  f4 03 1c 67 66 9f fd db  |.-..w......gf...|
+000000a0  ab 37 f7 9c f7 bc e7 fd  38 e7 bc 5f a7 ac 5c bb  |.7......8.._..\.|
+000000b0  8b d1 33 0c 63 80 57 55  19 e6 00 a3 3d 5e e6 cf  |..3.c.WU....=^..|
+000000c0  3f 67 e1 9d 72 fd 5b 53  98 d7 8b de 9f 7d 80 5d  |?g..r.[S.....}.]|
+000000d0  f1 fe ec fb 22 9b 1e b5  6f d9 fa f0 03 5b 37 3c  |...."...o....[7<|
+000000e0  64 df b8 61 f3 e6 87 25  fb fd 2d f6 ad f2 66 fb  |d..a...%..-...f.|
+000000f0  a6 cd f6 e5 ab 83 f6 87  1e 6e 6e 59 50 5c 3c c9  |.........nnYP\<.|
+00000100  91 a7 d1 fc c1 99 4b f6  d7 5e dd 3b f2 5e da f5  |......K..^.;.^..|
+00000110  f2 de 6a f8 ae 7e e9 cd  bd f3 e0 9b fa c9 3b 7b  |..j..~........;{|
+00000120  17 d2 fe 81 bd 9b e0 fb  eb 5d fb f6 56 52 dc d7  |.........]..VR..|
+00000130  f6 7e 1f be 37 ee 7a 73  ef 2d f0 fd af 9f be be  |.~..7.zs.-......|
+00000140  77 36 7c ef dd b4 31 82  74 46 64 e4 7d 0c b3 82  |w6|...1.tFd.}...|
+00000150  35 30 43 1b fd 9e 31 b9  39 76 32 6b 64 98 2a 96  |50C...1.9v2kd.*.|
+00000160  61 9a f4 14 76 a1 1b 7e  2c a8 38 ab 69 6f d1 fa  |a...v..~,.8.io..|
+00000170  86 fc 9c 91 2f b3 c7 a0  8d c1 a3 a3 bf 96 7c df  |..../.........|.|
+00000180  32 0a b7 8c 5b a3 c8 3d  2c b3 07 1b c7 59 e6 85  |2...[..=,....Y..|
+00000190  5f e8 fe 82 55 fd 0b 1f  90 d3 a0 ff fa e1 05 52  |_...U..........R|
+000001a0  cb 76 09 be 8b 1c ac 26  50 15 7b b5 60 f0 d8 41  |.v.....&P.{.`..A|
+000001b0  fb 05 5b 9b 37 48 1b 18  e6 d5 19 1a 4d 04 6a 6b  |..[.7H......M.jk|
+000001c0  30 8e 15 fc bf 40 43 63  9a 37 c3 4f 13 ab 1d 90  |0....@Cc.7.O....|
+000001d0  a6 af e0 a5 17 6c 7d 74  eb 46 68 53 5d 41 67 e6  |.....l}t.FhS]Ag.|
+000001e0  38 7c f7 7c 95 de ff 4d  d9 89 67 e2 99 78 26 9e  |8|.|...M..g..x&.|
+000001f0  89 67 e2 99 78 26 9e 89  67 e2 99 78 26 9e 89 e7  |.g..x&..g..x&...|
+00000200  ff fb ac 51 06 62 03 e6  a0 f3 74 30 b6 72 58 8d  |...Q.b....t0.rX.|
+00000210  44 01 24 ea 83 22 1b 81  46 54 95 4d aa b5 64 e9  |D.$.."..FT.M..d.|
+00000220  52 46 59 69 8e e5 d4 84  ef 7c 2f 3b a4 aa 2a d7  |RFYi.....|/;..*.|
+00000230  b9 03 86 83 c1 a0 a8 0b  f2 aa b5 14 30 dc 99 84  |............0...|
+00000240  2f 27 35 87 10 68 00 58  19 ce ca b9 bf 94 ee de  |/'5..h.X........|
+00000250  71 e7 ca e0 5d 7e d9 29  28 df b6 e8 2f b4 ba 1a  |q...]~.)(.../...|
+00000260  cb 12 f5 c3 89 7a d3 36  bb 62 8c 1d 9d ca fa 86  |.....z.6.b......|
+\end{verbatim}
+}}
+
+\end{frame}
+
+\frame{
+\frametitle{Binary analysis}
+A binary usually looks like a blob with random data. Often there is a structure,
+with embedded file systems or compressed files that can ``easily'' be recognised.
+}
+
+\frame{
+\frametitle{Analysis steps}
+Steps to determine if a binary contains a particular source code:
+
+\begin{enumerate}
+\item extract binary files from blobs (firmwares, installers, etc.) recursively (if needed)
+\item extract identifiers (strings, function names, variable names, etcetera) from binary files and compare these to (publicly available) source code
+\item use other information like file names, presence of other files, package databases, etcetera, for circumstantial evidence
+\end{enumerate}
+}
+
+\frame{
+\frametitle{``Ducktyping''}
+``If it looks like a duck and quacks like a duck, it is probably a duck''
+
+If you can relate many strings, function names, variable names, and so on from a binary file to source code it becomes statistically hard to deny (re)use of a certain software.
+
+Often it is possible to match hundreds or even thousands of strings, function/method names or variable names.
+}
+
+\frame{
+\frametitle{Drawbacks of manual inspection}
+Checking can be done by hand using standard Linux tools, but there are drawbacks:
+
+\begin{itemize}
+\item limited by the knowledge of the engineer
+\item time consuming (so expensive)
+\item easy to overlook things
+\end{itemize}
+
+So you really want to automate this! BAT can do this for you.
+}
+
+\frame{
+\frametitle{Place of BAT in an open source compliance process}
+BAT is not meant as a replacement of a source code scanner, because it focuses on different problems.
+
+BAT is useful when:
+
+\begin{itemize}
+\item you get binaries, but no source code and want to know what could be in there
+\item you get binaries and source code, but don't know if binaries and sources match
+\item you want to know how binaries interact (for example linking), which a source code scanner cannot tell you
+\end{itemize}
+}
+
+\frame{
+\frametitle{Inner workings of BAT}
+
+\begin{enumerate}
+\item discovery of offsets of known file systems and compressed files, verification of file types and unpacking of found file systems and compressed files (recursively)
+\item check each unpacked file, like identifier search or ELF linking verification
+\item reporting, generating pictures, etcetera
+\end{enumerate}
+}
+
+\frame{
+\frametitle{BAT modules}
+
+BAT is extremely modular and it comes with several modules:
+
+\begin{itemize}
+\item unpacking over 30 file systems and compressed files
+\item report on common properties (file type, size, etcetera)
+\item search for license markers and identifiers
+\item advanced string identifier search
+\item dynamic ELF linking verification
+\item kernel module analysis
+\item many more
+\end{itemize}
+}
+
+\frame{
+\frametitle{Advanced identifier search/ranking}
+Most advanced check in BAT extracts string constants, function/method names, variable names, etcetera, from binaries and compares them with a large database of strings, function/method names, etcetera extracted from source code:
+
+Currently over 170,000 packages from GNU, GNOME, KDE, Samba, Debian, Savannah, FedoraHosted, Linux kernel, Maven, F-Droid, \dots
+
+Database is not part of BAT, but only available as a subscription, or you can ``roll your own''.
+
+Algorithm has been published at the Mining Software Repositories 2011 conference and most scripts to create the database are open.
+}
+
+\frame{
+\frametitle{Inner workings of BAT ranking}
+BAT ranking algorithm uses a database where data is extracted from \textit{source code}:
+
+\begin{itemize}
+\item string constants (using \texttt{xgettext} and regular expressions for some Linux kernel code)
+\item function names (C) and method names (Java) (using \texttt{ctags})
+\item variable names and Linux kernel symbols (C), field names and class names (Java) (using \texttt{ctags})
+\item licenses (if enabled) (using Ninka and FOSSology)
+\item Linux kernel module info (using regular expressions)
+\item various characteristics of the file (SHA256 checksum, etc.)
+\end{itemize}
+
+Core of algorithm uses string constants (bulk of the usable information in the binary), rest of information is used to verify/strengthen the findings.
+}
+
+\begin{frame}[fragile]
+\frametitle{String constant example}
+
+\begin{verbatim}
+...
+ } else {
+    printf("%s %s: status is %x, should never happen\n",
+           inst->prog, inst->device, status);
+    status = EXIT_ERROR;
+ }
+ ...
+\end{verbatim}
+\end{frame}
+
+\frame{
+\frametitle{String extraction from binaries}
+From each binary that has not yet been discarded (graphics, video, audio, resources files and text files are not interesting so ignored) string constants are extracted using \texttt{strings}.
+
+String constants are used for fingerprinting because they are not discarded by the compiler.
+
+Some preprocessing steps can be used to increase quality of the strings extracted (to avoid false positives and get better scan results).
+}
+
+\frame{
+\frametitle{Scoring (1)}
+Each binary file is sorted into a family of languages:
+
+\begin{itemize}
+\item C (C/C++/QML/etc. + unknown binaries)
+\item Java (JDK/Dalvik/Scala/etc.)
+\item C\#
+\item ActionScript
+\end{itemize}
+
+Reason is that strings that are very insignficant in one family could be very significant in another and vice versa.
+
+Drawback: language embedding (specifically .NET) is at odds with this. For most systems (Java, embedded Linux) this is actually not much of an issue.
+}
+
+\frame{
+\frametitle{Scoring (2)}
+Each string constant is compared to the database. If a match is found in the database a score is assigned to that string.
+
+The score for a unique string (single package) is the length of the string.
+
+If it is not unique the score very rapidly drops depending on in how many different packages it can be found.
+
+If there is \textit{cloning} the string is assigned to a package using an algorithm that picks the most promising package.
+}
+
+\frame{
+\frametitle{Cloning}
+Sometimes the wrong package will be detected, but this reflects how open source works!
+
+\begin{itemize}
+\item software reuse: code is ``cloned'' between packages. Some packages are forked and incorporated (partially) into others (in Java more so than in C code).
+\item packages are renamed for various reasons. For example in Debian: \texttt{httpd} is renamed to \texttt{apache2}, Firefox is Iceweasel, and so on.
+\end{itemize}
+
+BAT tries to take alternatives and ``cloning'' into account.
+}
+
+\frame{
+\frametitle{Some BAT statistics}
+\begin{itemize}
+\item quad core Intel(R) Core(TM) i7-3770 CPU (3.40GHz) with Hyper Threading, so 8 threads in total
+\item 6 GiB DDR3 RAM
+\item Samsung 840 PRO SSD
+\item SATA3 disk
+\item stock Fedora 19, with one package from RPM Fusion, \texttt{/tmp} on tmpfs disabled
+\item BAT 15
+\end{itemize}
+
+Hardware costs (late 2012): about 930 Euro
+
+All tests were done on a freshly booted system. Database resides on SSD. Firmwares are unpacked on SSD, extra tmpfs to speed up LZMA unpacking, \texttt{compress} unpacking and DEX scanning. Final result tarball written to SATA disk, unpacked data excluded.
+}
+
+\frame{
+\frametitle{Example: Trendnet TEW-636ABP}
+Filename: TEW-636APB-1002.bin
+
+Size of the file is 4.0 MiB (complete flash dump). Total data after BAT unpacked it is 15 MiB.
+
+In total 262 files were scanned:
+
+\begin{itemize}
+\item 89 ELF files
+\item 48 GIF files
+\item rest: empty files, HTML files, JavaScript, shell scripts and other files
+\end{itemize}
+
+Total scan time: 23s
+}
+
+\frame{
+\frametitle{Example: ASUS O!Play Air}
+Filename: HDP\_R3\_FW\_128\_PAL.zip
+
+Size of the file is 24 MiB. Total data after BAT unpacked it is 272 MiB.
+
+In total 1351 files were scanned:
+
+\begin{itemize}
+\item 96 ELF files
+\item 90 PNG files
+\item 346 XML files
+\item 95 ASCII text files
+\item rest: data files, scripts, other text files, others
+\end{itemize}
+
+Total scan time: 1m37s
+}
+
+\frame{
+\frametitle{Example: ASUS PadFone 2}
+Filename: JP\_PadFone2\_10\_4\_11\_13UpdateLauncher.zip
+
+Size of the file is 780 MiB. Total data after BAT unpacked it is 3.5 GiB.
+
+In total 56,000+ files were scanned:
+
+\begin{itemize}
+\item 36971 PNG files
+\item 9 GIF files
+\item 658 ELF files
+\item 54 Android classes.dex files
+\item 129 Android odex files
+\item 191 Android resource files
+\end{itemize}
+
+Total scan time: 21m
+}
+
+\frame{
+\frametitle{Demo: Trendnet TEW-636ABP}
+Demo is walking through the results since a scan would take too long on this netbook.
+}
+
+\frame{
+\frametitle{Database challenges}
+There are challenges in creating a database:
+
+\begin{itemize}
+\item \textit{huge} amounts of data (and not getting less)
+\item package names and file names are very important in BAT. DVCS like Git make software development more fluid.
+\item cloning of software between packages.
+%\item current implementation assigns non-unique matches to largest package, which is sometimes incorrect (for example: assign strings from \texttt{zlib} to \texttt{icedove}). This will be fixed in newer versions.
+\end{itemize}
+
+These challenges are not exclusive to BAT.
+}
+
+\frame{
+\frametitle{Database quality}
+Results of scanning are dependent on quality of the database: if only BusyBox is included everything will look like BusyBox. Making a good database is not easy:
+
+\begin{itemize}
+\item What to include?
+\item What to exclude?
+\item When is a package a new package?
+\end{itemize}
+}
+
+\frame{
+\frametitle{Other functionality in BAT}
+
+\begin{itemize}
+\item finding duplicate files in firmwares
+\item finding leftover kernel modules (mismatching kernel version numbers)
+\item ELF dynamic linking dependency inspection
+\item (experimental) matching of results of binaries with source code archives
+\item and more
+\end{itemize}
+}
+
+\frame{
+\frametitle{ELF dynamic linking}
+Actual license of a binary is only determined at \textit{run time}. This is a
+largely unresearched area.
+
+BAT can give more information about how ELF binary files interact.
+}
+
+\frame{
+\frametitle{ELF dynamic linking dependency graph}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.1cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{dot-busybox3}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Challenges}
+
+\begin{itemize}
+\item theory versus practice
+\item more data
+\item disk I/O
+\item new file systems
+\item compiler settings
+\item LZMA unpacking
+\item increasing size of firmwares
+\item encryption/obfuscation
+\item reporting
+\end{itemize}
+}
+
+\frame{
+\frametitle{Challenge: theory versus practice}
+I often hear ``How hard can it be?''
+
+\begin{itemize}
+\item proper scanning takes a lot of bookkeeping
+\item you have to deal with many exceptions and weird data (example: dangling JFFS2 inodes, corrupt archives, etc.)
+\item non-standard/modified archives/file systems (SquashFS with LZMA)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Challenge: more data}
+There is more and more software written, published and reused. This leads to
+larger databases to query.
+
+Example: the Linux kernel has grown massively in the last 10 years.
+
+Example: Android apps
+}
+
+\frame{
+\frametitle{Challenge: disk I/O}
+I/O can take quite a bit of total scanning time. Mostly this is:
+
+\begin{itemize}
+\item querying the database
+\item LZMA unpacking (temporary files)
+\end{itemize}
+
+Many tricks are already used in BAT to decrease disk I/O. Smart system
+setup seriously helps (using SSD, enough memory for tmpfs, etcetera).
+}
+
+\frame{
+\frametitle{Challenge: file systems}
+New file systems that are used, or variants of file systems are sometimes
+difficult to unpack:
+
+\begin{itemize}
+\item YAFFS2 with different settings: lots of different versions float around
+\item UBI \& UBIFS: \texttt{unubi} was removed from \texttt{mtdutils}
+\item ext4 with extents and no ext2 compatibility
+\item countless variations of SquashFS
+\item vendor specific tweaks to normal file systems (for whatever reason)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Challenge: compiler settings}
+Some compiler settings move strings (currently extracted from
+\texttt{.data}, \texttt{.rodata} and similar sections from the ELF file) to
+other sections inside the ELF file, but I don't know (yet) when.
+
+Also, sometimes function names are not found in the dynamic section.
+
+Detecting these compiler settings from the generated byte code is future work.
+}
+
+\frame{
+\frametitle{Challenge: LZMA unpacking}
+LZMA does not have a single ``magic'' header. Lots of different valid headers
+are possible (962,072,674,304 combinations possible for the first 5 bytes).
+
+However, only a few are in widespread use.
+
+Some filtering is done (based on information found ``in the wild'' and various
+implementations), but the only way to be complete is by trying to unpack every
+possible valid file. This can be very time consuming.
+
+Being complete would cost too much time.
+}
+
+\frame{
+\frametitle{Challenge: increasing size of firmwares}
+Firmware updates of 1 GiB or more are no longer an exception.
+
+Android file systems often contain two separate user lands (one with Google's
+tools, one with tools that actually work).
+
+After after unpacking there are easily over 50,000 files to scan.
+
+Bigger sizes amplify challenges mentioned earlier.
+}
+
+\frame{
+\frametitle{Challenge: encryption/obfuscation}
+Some vendors encrypt or obfuscate firmwares, ranging from obvious (XOR) to
+real encryption (AES).
+
+BAT can handle a few XOR implementations right now (hard coded, experimental
+feature, disabled by default). Cryptanalysis is currently not on the roadmap,
+but could be interesting (technically and legally).
+}
+
+\frame{
+\frametitle{Challenge: reporting}
+BAT is pretty new technology and it is unclear what the most effective way to
+interpret the information generated by BAT is.
+
+This needs more eyeballs and review: for \textit{me} it is clear, but I want to
+know opinions of others.
+}
+
+\frame{
+\frametitle{Challenge: perfection}
+``Perfect is the enemy of good''
+
+Working with binaries means working with incomplete information and 100\%
+accuracy is impossible to achieve...but I try.
+}
+
+\frame{
+\frametitle{Upcoming functionality in BAT (next few months)}
+
+\begin{itemize}
+\item overcoming or avoiding challenges mentioned earlier
+\item better GUI
+\item deployment as a webservice
+\item recreation of kernel configuration from binary kernel image and kernel modules (prototype works quite well)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Looking further into the future}
+There is a lot of information that can be extracted from binaries. Right now
+only a tiny fraction of the information is used. Generated code for
+example is not (yet) used.
+
+There are other data sources that are still untapped like security information
+bug reports, and so on. I will integrate more of these in the future.
+
+I have ideas for at least another few years of coding.
+}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\frame{
+\frametitle{Contact}
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}
