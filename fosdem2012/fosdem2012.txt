@@ -1,0 +1,1 @@
+Slides for a talk I gave in 2012 at FOSDEM in Brussels, Belgium. This talk about Android GPL compliance is heavily outdated and is just here out of historical interest. Things are improving in Android.

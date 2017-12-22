@@ -1,0 +1,325 @@
+\documentclass[10pt]{beamer}
+
+\usepackage{url}
+\author{Armijn Hemel}
+\title{Android GPL license compliance}
+\date{February 4, 2012}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item core team \url{gpl-violations.org} since 2005
+\item ex-board member at NLUUG (\url{http://www.nluug.nl/})
+\item sysadmin, developer and consultant at Loohuis Consulting (2006 - May 2011)
+\item May 2011 - present: owner Tjaldur Software Governance Solutions
+\end{itemize}
+}
+
+\frame{
+\frametitle{Talk overview}
+
+\begin{itemize}
+\item GPL enforcement
+\item license violations in Android
+\item license violation discovery
+\item license violation resolution
+\item license violation prevention
+\item Google's role
+\item Q\&A
+\end{itemize}
+
+I will not talk about software patents. Focus of this talk is on GPL version 2.
+}
+
+\frame{
+\frametitle{GPL enforcement}
+
+\begin{itemize}
+\item is real
+\item is happening in Europe and US
+\item happens mostly for GPLv2 and LGPLv2/2.1
+\item is being done by both companies and individuals
+\item is easy to avoid
+\end{itemize}
+}
+
+\frame{
+\frametitle{gpl-violations.org}
+Harald Welte founded \url{gpl-violations.org} in 2004 to tackle GPL license violations through education, documentation and, as a last resort, legal action.
+
+I joined in October 2005.
+
+\url{gpl-violations.org} has solved several hundreds of cases through legal action and informal action.
+}
+
+\frame{
+\frametitle{License violation life cycle}
+
+Mistakes happen, but they need to be resolved.
+
+\begin{enumerate}
+\item understanding the problem
+\item acknowledging the problem
+\item fixing the problem
+\item preventing the problem
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Violations in Android}
+There are two main areas where things go wrong:
+
+\begin{itemize}
+\item devices
+\item Android marketplace
+\end{itemize}
+
+I will not talk (much) about applications in marketplaces, but focus on devices.
+
+Note: it is a myth that Android user space does not contain GPL code. Google ships Android userspace without GPL code, but many manufacturers put GPL code back in (like BusyBox)!
+}
+
+\frame{
+\frametitle{Notable examples}
+Two cases of (alleged) GPL violations were very visible in the last two years:
+
+\begin{itemize}
+\item HTC
+\item Android tablet incompliance
+\end{itemize}
+}
+
+\frame{
+\frametitle{HTC}
+HTC assembles software themselves, using a SDK from upstream (Qualcomm).
+
+HTC has consistently stepped on people's toes:
+
+\begin{itemize}
+\item standard response: ``Please wait 60 to 90 days''
+\item persistent, even after being asked to fix this, leading to bad PR
+\end{itemize}
+
+HTC needs to fix their software release processes.
+}
+
+\frame{
+\frametitle{Android tablets}
+Kernel developer Matthew Garrett got quite angry in late 2010 and assembled a list of Android tablets that are not in compliance.
+
+The companies on his list don't do development, but only rebadge and resell.
+
+Funny responses \url{gpl-violations.org} got:
+
+\begin{itemize}
+\item ``Our device is based on Android, not on Linux''
+\item ``You can get the source code from Google''
+\item ``We made some changes specifically for our tablet hardware, so you can't have the source code''
+\item ``we think the kernel code is under GLPv3 so we have 60 days to fix the issue''
+\end{itemize}
+
+The problem is not these companies, but the whole supply chain that does not implement proper software governance.
+}
+
+\frame{
+\frametitle{Why is GPL code put back}
+\begin{itemize}
+\item Android's ToolBox is quite minimal
+\item other tools are missing (firewalling)
+\end{itemize}
+
+Result: next to Android there often is a complete other Linux distribution on a device!
+}
+
+\frame{
+\frametitle{Discovering violations}
+
+Important: violating a license is not a technical issue, but a legal issue. Technical measures (``GPL compliance engineering'') are only used to obtain evidence.
+
+Two steps need to be taken:
+
+\begin{enumerate}
+\item documentation analysis
+\item technical analysis
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Documentation analysis}
+The GPLv2 license needs:
+
+\begin{enumerate}
+\item copy of the license text
+\item complete and corresponding source code for programs distributed under GPLv2, or
+\item written offer for the complete and corresponding source code
+\end{enumerate}
+
+Points 1 and 3 can easily be checked by non-technical people.
+
+Note: the ``legal information'' tab in the Android user interface \textit{usually} fullfills point 1.
+}
+
+\frame{
+\frametitle{Technical analysis}
+Technical analysis consists of two parts:
+
+\begin{itemize}
+\item determining the presence of GPL licensed software in binaries
+\item check source code if it matches said binaries
+\end{itemize}
+
+Sometimes hardware needs to be modified to get access to the juicy bits (like adding a serial port).
+}
+
+\frame{
+\frametitle{Analysing binaries}
+
+\begin{itemize}
+\item extract programs from binary blobs using various techniques
+\item extract human readable strings from binary programs and match with source code
+\item look at meta information (file names, package meta data, etc.)
+\end{itemize}
+
+If you can match a significant number of specific strings it becomes statistically hard to deny reuse of GPL licensed software.
+
+You can do this by hand using many standard Linux tools, or use an automated tool like the Binary Analysis Tool.
+}
+
+\frame{
+\frametitle{Analysing source code}
+\begin{enumerate}
+\item find out what is in the binary
+\item check for every binary that contains GPL licensed code if there is matching source code, under a GPL compatible license
+\item check if there are no accidental leftover binaries without sources in the source code archive itself
+\end{enumerate}
+}
+
+\frame{
+\frametitle{Source code scanning versus binary scanning}
+
+So what about using source code scanning tools to ensure the binary does not contain unwanted surprises?
+
+Unless you build the binaries yourself using the provided source code you will \textit{never} be able to tell what is in a binary using only a source code scanning solution!
+
+I am working on tools for combining license checking with information from build systems.
+}
+
+\frame{
+\frametitle{Handling violation reports}
+A problem is the way violation reports are handled, or rather: are not handled.
+
+This leads to:
+
+\begin{itemize}
+\item angry people
+\item bad PR
+\item unnecessary misunderstandings
+\item long term damage with upstream projects (HTC was told to ``wait 60 to 90 days'' when they needed help on LKML)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Fixing communications}
+
+\begin{itemize}
+\item instruct support staff to hand off requests for source code. Don't let them just come up with something.
+\item establish a separate point of contact regarding open source license questions, preferably a team (to avoid ``single point of failure'') and advertise this on your website/in documentation.
+\item record all cases in a request tracker or CRM system, so there is a history.
+\end{itemize}
+}
+
+\frame{
+\frametitle{Fixing a violation}
+Ideally:
+
+\begin{itemize}
+\item make complete and corresponding source code available
+\item inform customers of their rights
+\item take preventive measures so it never happens again
+\end{itemize}
+
+If this is not possible:
+
+\begin{itemize}
+\item stop distribution completely
+\item take preventive measures so it never happens again
+\end{itemize}
+}
+
+\frame{
+\frametitle{License violation prevention}
+
+The best way to solve a license violation is to have never have it happen in the first place!
+
+There are two components:
+
+\begin{itemize}
+\item technical process improvements
+\item non-technical process improvements
+\end{itemize}
+}
+
+\frame{
+\frametitle{Technical process improvements}
+
+\begin{itemize}
+\item check releases (source code and binary) from upstream. Trust, but verify!
+\item provide compliant releases downstream
+\item integrate compliance into your development process
+\item actively teach your engineers about licensing and when it is OK to combine/reuse software
+\item push your changes to upstream projects, so you cannot accidentily forget to include them the next time (plus all the other advantages!)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Non-technical process improvements}
+
+\begin{itemize}
+\item push compliance upstream (if you source from companies) through contracts
+\item demand a ``software bill of materials'' in SPDX (Software Package Data Exchange) or another format and verify it with a checker
+\item check and record every release that is distributed, including beta/test versions
+\item use SPDX (Software Package Data Exchange) or another format to clearly indicate what you are shipping
+\end{itemize}
+}
+
+\frame{
+\frametitle{Google's role}
+
+Some people have recently said Google should do more, like denying access to Google Marketplace for violators.
+
+This is impossible to do:
+
+\begin{itemize}
+\item practical issues : enormous burden on the shoulders of Google
+\item legal issue: marketplace terms are related to trademarks, not copyright
+\item legal issue: if Google checks, but makes a mistake, they create precedence, opening a whole new can of legal worms
+\end{itemize}
+
+This is not Google's problem, Google is compliant. Google has also been very helpful in helping us contact companies.
+}
+
+\frame{
+\frametitle{Q\&A}
+Remember: no questions about software patents
+}
+
+\frame{
+\frametitle{Contact}
+
+\begin{itemize}
+\item \url{armijn@gpl-violations.org} for \url{gpl-violations.org} related questions
+\item \url{info@tjaldur.nl} for consultancy questions
+\end{itemize}
+
+or just talk to me in the hallway.
+}
+
+\end{document}
