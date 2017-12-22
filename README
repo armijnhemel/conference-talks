@@ -1,7 +1,10 @@
 This repository contains slides of talks I have given over the years:
 
-* EOLE 2011
+* NLUUG spring conference 2010 (topic: e-mail autoresponders)
+* Embedded Linux Conference 2010 (topic: binary scanning)
+* EOLE 2011 (topic: GPL compliance)
 * LinuxCon Europe 2011 (topic: build tracing)
+* FOSSCon Korea 2011 (topic: Android GPL compliance)
 * FOSDEM 2012 (topic: Android GPL compliance)
 * Dagstuhl Seminar 12071 2012 (topic: code cloning)
 * internal workshop LIP6 2012 (topic: binary scanning)
@@ -9,11 +12,15 @@ This repository contains slides of talks I have given over the years:
 * LinuxCon Japan 2013 (topic: simplifying compliance)
 * Real Time Linux Workshop 2013 (topic: binary scanning -- canceled training)
 * Automotive Linx Summit 2013 (topic: binary scanning)
+* Korea Linux Forum 2013 (topic: binary scanning)
+* Black Duck Korea 2014 (topic: build tracing)
 * LinuxCon Europe 2014 (topic: security)
 * Open Compliance Summit 2014 (topic: copyright notice extraction)
 * FSFE Legal & Licensing Workshop 2014 (topic: build tracing)
+* Black Duck Korea 2015 (topic: binary scanning)
 * LinuxCon Japan 2015 (topic: security)
 * Open Compliance Summit 2015 (topic: flowcharts for supply chain)
+* SURFnet 2016 (topic: binary scanning -- in Dutch)
 * FSFE Legal & Licensing Workshop 2016 (topic: source code provenance)
 * OSADL Networking Day 2016 (topic: source code provenance)
 * FSFE Legal & Licensing Workshop 2017 (topic: ELF linking)
@@ -25,3 +32,5 @@ In some cases some sensitive information was removed and the PDF file was regene
 * opencompliancesummit2014/opencompliance2014.pdf
 
 All other files are the original slides.
+
+Some of the talks might mention the names of companies. It should be noted that many of the companies that are mentioned in a GPL compliance context have started to become better. The fact that they are mentioned does not mean that their current products have defects, or are free of defects.
