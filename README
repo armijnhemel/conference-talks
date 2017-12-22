@@ -2,10 +2,13 @@ This repository contains slides of talks I have given over the years:
 
 * EOLE 2011
 * LinuxCon Europe 2011 (topic: build tracing)
+* FOSDEM 2012 (topic: Android GPL compliance)
 * Dagstuhl Seminar 12071 2012 (topic: code cloning)
 * internal workshop LIP6 2012 (topic: binary scanning)
 * FSFE Legal & Licensing Workshop 2013 (topic: ELF linking)
 * LinuxCon Japan 2013 (topic: simplifying compliance)
+* Real Time Linux Workshop 2013 (topic: binary scanning -- canceled training)
+* Automotive Linx Summit 2013 (topic: binary scanning)
 * LinuxCon Europe 2014 (topic: security)
 * Open Compliance Summit 2014 (topic: copyright notice extraction)
 * FSFE Legal & Licensing Workshop 2014 (topic: build tracing)
