@@ -1,0 +1,262 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Till Jaeger - JBB Rechtsanw\"alte\\Armijn Hemel - Tjaldur Software Governance Solutions}
+\title{}
+\title{OSADL License Compliance Audit}
+\date{April 10, 2014}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About OSADL}
+The Open Source Automation Development Lab (OSADL) is a registered cooperative under German law
+aimed at reducing cost for its members (43 regular members, 19 academic members, 5 sponsoring members)
+while solving shared problems:
+
+\begin{itemize}
+\item (real time) kernel development
+\item testing infrastructure
+\item research into safety critical systems certification
+\item legal issues
+\end{itemize}
+
+If you are interested in knowing more/joining we have brochures.
+}
+
+\frame{
+\frametitle{Product fields}
+OSADL members are in fields that are different from for example consumer
+electronics (or making ``Flappy Bird'' clones):
+
+\begin{itemize}
+\item factory/building automation
+\item lasers
+\item robots
+\item washing machines (normal ones, but also for DNA)
+\item woodwork machines
+\item agriculture
+\item etc.
+\end{itemize}
+
+Many products are not flashy, but perform key roles in infrastructure.
+}
+
+\frame{
+\frametitle{Considerations OSADL member companies have}
+Products have a long life. Some have a ``return on investment'' of 20 years.
+Support contracts often are (at least) as long. Facebook will be long gone by
+then!!
+
+Software upgrades are frequently very hard, or almost impossible to do, or
+could be very risky, costly or even dangerous.
+
+Many of these companies are therefore, by nature, risk averse.
+
+Linux and Open Source helps them reduce this risk.
+}
+
+\frame{
+\frametitle{OSADL license compliance audit}
+The license compliance audit (LCA) was developed because OSADL member companies requested it.
+
+The LCA is limited to a single device/firmware revision combination.
+
+Two components on the system are audited:
+
+\begin{enumerate}
+\item Linux kernel including external kernel modules
+\item C library (glibc/uClibc), including how other components are linked to it
+\end{enumerate}
+
+The audit is restricted to license compliance: detecting code theft/plagiarism,
+patent issues and license compatibility of user space programs are not part of
+the audit.
+
+After successful completion of the audit the company gets a certificate.
+}
+
+\frame{
+\frametitle{}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-2.5cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{OSADL-LCA-Certificate-by3.png}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Why did OSADL start this audit?}
+A few practical reasons:
+
+\begin{itemize}
+\item many OSADL companies are (originally) not software companies, a lot of
+knowledge is missing, yet open source is their (software) future
+\item wrong choices made now could have effects lasting decades
+\end{itemize}
+
+The actual goal for companies is not the certificate, but getting a ``sanity
+check'' and a better insight how well they are doing.
+
+Also: no one had dared doing this before, so there was a challenge :-)
+}
+
+\frame{
+\frametitle{Compliance audit setup}
+The audit is on site and lasts a full day. The company has one (or more)
+engineers involved in making the product available to answer any questions.
+
+Furthermore we ask for:
+
+\begin{itemize}
+\item source code
+\item binary image
+\item documentation
+\end{itemize}
+
+The audit is done in a continuous dialogue and discussion between lawyer, audit
+engineer and company engineers to ensure knowledge transfer from the auditors
+to the company.
+}
+
+\frame{
+\frametitle{Report}
+For each audit an extensive report with the conclusions of the audit is made.
+In the report problems found are described, plus steps that should be taken to
+remedy these problems.
+}
+
+\frame{
+\frametitle{Questionnaire}
+Before we do an audit we ask companies to fill in a questionnaire:
+
+\begin{itemize}
+\item gives us some idea of what to expect
+\item ensures that we have all necessary information to actually do an audit
+\item forces companies to think about issues in advance
+\end{itemize}
+}
+
+\frame{
+\frametitle{Legal work done during the audit}
+
+\begin{enumerate}
+\item license text review (compatibility, completeness)
+\item contract \& EULA review
+\item written offer review
+\item discussion about alternate ways to carry out license obligations
+\end{enumerate}
+
+Many licenses require that license texts and author information are present.
+The review is to catch if licenses are missing or incomplete.
+
+Contracts and EULA are checked for compatibility to see if they are compatible
+with GPL/LGPL.
+
+The written offer (if any) is reviewed to see if it is correct.
+}
+
+\frame{
+\frametitle{Technical work done during the audit}
+
+\begin{enumerate}
+\item license scan
+\item linking analysis
+\item rebuild of kernel + C library/toolchain
+\end{enumerate}
+}
+
+\frame{
+\frametitle{First: reducing the search space}
+Even though scope is limited it is still of work: recent Linux kernels have
+around 40,000 files.
+
+Looking at each file would be very costly (at 1 second per file it would be 11+
+hours), so we take a few shortcuts.
+
+\begin{enumerate}
+\item keep a database with all files in upstream \url{kernel.org} kernels
+\item determine a checksum for each file in the kernel we audit
+\item if the file can be found in the database we trust it and ignore it
+\item look in more detail at files that can't be found in the database
+\end{enumerate}
+
+For the Linux kernel this typically eliminates between 95\% (but usually closer
+to 98\%) of the files and allows us to focus on the \textit{real} problems.
+
+We think this is justified as the Linux kernel has already done due dilligence
+on code it publishes. Similar: FSF (glibc) and SFC (uClibc).
+}
+
+\frame{
+\frametitle{License scan}
+Each file that could not be found in the database (a few hundred files) are
+scanned with Nomos (part of FOSSology) and Ninka. This is to easily spot
+problematic files and prioritize work.
+
+The license and copyright notices of each of these files is also verified manually.
+}
+
+\frame{
+\frametitle{Linking analysis and kernel/C library rebuild}
+Using the Binary Analysis Tool (BAT) linking relationships between components
+are researched and visualised.
+
+We also ask the company's engineers to rebuild the kernel and C library (or
+entire toolchain) on the spot and we compare the results with binaries on the
+device.
+}
+
+\frame{
+\frametitle{Common issues found: technical}
+\begin{itemize}
+\item missing source code
+\item incorrectly licensed source code
+\end{itemize}
+}
+
+\frame{
+\frametitle{Common issues found: legal}
+\begin{itemize}
+\item contradicting statements in licenses and contracts
+\item LGPLv2.1 section 6 (requiring to allow reverse engineering and relinking)
+\end{itemize}
+}
+
+\frame{
+\frametitle{Common issues found: organisational}
+\begin{itemize}
+\item tasks assigned to the wrong staff (who is responsible,
+who handles source code requests, etc.)
+\item purchase department does not take OSS licensing into account
+\item legal documents are not made or reviewed by the legal department, but
+by the development department (sometimes more than one)
+\end{itemize}
+}
+
+\frame{
+\frametitle{In conclusion: our experience}
+We have found this type of audit to be the most effective ``tool'' available
+to help achieve license compliance.
+
+Although it is in essence a \textit{product} audit we uncover quite a few
+\textit{process} defects: many problems tend to be shared between multiple
+products.
+
+In the future we also want to provide pure process audits as well as supplier audits.
+
+If you want an audit, come talk to us! :-)
+}
+
+\frame{
+\frametitle{Q\&A}
+}
+
+\end{document}
