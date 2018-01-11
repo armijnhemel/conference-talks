@@ -1,0 +1,323 @@
+\documentclass[11pt]{beamer}
+
+\usepackage{url}
+\usepackage{tikz}
+\author{Armijn Hemel, MSc\\Tjaldur Software Governance Solutions}
+\title{Binary Analysis}
+\date{October 29, 2014}
+
+\begin{document}
+
+\setlength{\parskip}{4pt}
+
+\frame{\titlepage}
+
+\frame{
+\frametitle{About Armijn}
+
+\begin{itemize}
+\item using Open Source software since 1994
+\item MSc Computer Science from Utrecht University (The Netherlands)
+\item created original prototype for NixOS
+\item core team \url{gpl-violations.org} from 2005 - May 2012
+\item owner Tjaldur Software Governance Solutions
+\item European coordinator Linux Defenders at Open Invention Network
+\end{itemize}
+}
+
+\frame{
+\frametitle{Today's topic}
+Today I will talk about (automatically) analysing binary files, plus tell you why I do this. I will cover:
+
+\begin{itemize}
+\item consumer electronics supply chain issues
+\item some current technologies for binary analysis I (co-)developed
+\item new exciting projects that \textit{you} can work on
+\end{itemize}
+
+Let's keep this interactive as much as possible. Ask questions. Make remarks.
+}
+
+\frame{
+\frametitle{Why analyse binaries}
+Contrary to what many people in the software industry want to believe most software is distributed in binary form:
+
+\begin{itemize}
+\item EXE, RPM, DEB
+\item embedded devices
+\item apps
+\item \dots
+\end{itemize}
+
+Source code really is the exception!
+}
+
+\frame{
+\frametitle{Supply chains}
+Marketing and rebranding is very common in many industries:
+
+\begin{itemize}
+\item food industry
+\item soap
+\item consumer electronics
+\end{itemize}
+
+Know your supply chains and you can save a lot of money!
+}
+
+\frame{
+\frametitle{Supply chains in the electronics industry}
+Devices are not made in the way that many people think. Instead, a (long) supply chain of companies is responsible for a single product:
+
+\begin{itemize}
+\item chipset manufacturer
+\item original design manufacturer (ODM)
+\item SDK vendor
+\item 3rd party vendors (hardware drivers, etc.)
+\end{itemize}
+
+The name on the box doesn't mean anything.
+}
+
+\frame{
+\frametitle{Consumer electronics: the truth}
+Almost everything is purchased pre-fab in Asia. Making everything yourself is commercial suicide:
+
+\begin{itemize}
+\item extremely thin margins
+\item cut throat competition
+\item quality is less important than price
+\item ``cowboys''
+\end{itemize}
+
+It's like Nike: don't do any production, just marketing and sales.
+}
+
+\frame{
+\frametitle{}
+  \begin{tikzpicture}[remember picture,overlay]
+    %\node[yshift=0.3cm] at (current page.center)
+    \node[yshift=-0.3cm] at (current page.center)
+    {
+      \pgfimage[width=\linewidth]{alibaba}
+    };
+  \end{tikzpicture}
+}
+
+\frame{
+\frametitle{Problems observed in consumer electroncis}
+Razor thin margins and high pressure cause people to take shortcuts:
+
+\begin{itemize}
+\item copyrights
+\item security
+\item hardware components (out of scope)
+\end{itemize}
+
+Because more software is commoditized because of open source chipset manufacturers are providing more and more standard solutions, cutting margins of ODMs. Market pressure from customers drives prices down more.
+}
+
+\frame{
+\frametitle{Experiences with Asia regarding copyright}
+
+Barriers:
+
+\begin{itemize}
+\item copyright works differently
+\item cultural barriers
+\item NDAs were mandatory for years, now source code is demanded
+\item widely used open source licenses like GPLv2 are all in English
+\item open source code (such as GPL) is seen as ``public domain''
+\end{itemize}
+}
+
+\frame{
+\frametitle{Experiences with Asia regarding copyright (2)}
+
+\begin{itemize}
+\item low risk getting caught, so why bother?
+\item ``best practices'' are not applied: development processes are often quite sloppy
+\item everything is short term
+\item engineers switch companies fast, especially in Taiwan
+\item competitors also don't follow licenses and ``save'' money
+\end{itemize}
+}
+
+\frame{
+\frametitle{Experiences with security}
+Security is not a feature, so there are no tests done for it.
+
+It is simply not on their radar \textit{at all}.
+}
+
+\frame{
+\frametitle{Problem: how to discover issues}
+We have all these devices. How are we going to find out what is inside a device and whether or not it is open source software, or is insecure?
+
+What are \textit{your} thoughts?
+}
+
+\frame{
+\frametitle{Firmware analysis}
+Firmwares seem like opaque blobs, but actually there is structure:
+
+\begin{itemize}
+\item file systems
+\item compressed files
+\item archives
+\end{itemize}
+
+First look for headers/footers, carve out file systems, unpack them, then recursively scan files that were unpacked.
+
+Observed issues: vendor specific modifications to file systems, obfuscation/encryption
+}
+
+\frame{
+\frametitle{Analysing individual binaries}
+Given a single binary how would you try to find out:
+
+\begin{itemize}
+\item contents (what open source software was used)
+\item possible versions of open source software
+\end{itemize}
+
+\textit{Your} thoughts!
+}
+
+\frame{
+\frametitle{Drawbacks of decompilation}
+
+\begin{itemize}
+\item various architectures
+\item different compiler settings
+\item possibly illegal in some jurisdictions
+\item binaries are often stripped
+\end{itemize}
+}
+
+\frame{
+\frametitle{Fingerprinting!}
+It is easier to fingerprint binaries using:
+
+\begin{itemize}
+\item string constants
+\item function/method names
+\item variable names
+\end{itemize}
+}
+
+\begin{frame}[fragile]
+\frametitle{String constants}
+\begin{verbatim}
+...
+ } else {
+    printf("%s %s: status is %x, should never happen\n",
+           inst->prog, inst->device, status);
+    status = EXIT_ERROR;
+ }
+ ...
+\end{verbatim}
+
+These are not stripped by the compiler and often occur in the exact same order as in the source code. This makes it ideal for fingerprinting.
+\end{frame}
+
+\frame{
+\frametitle{Function names/variable names}
+In dynamically linked ELF binaries it is possible to easily get lists of locally defined functions and variable names. Great for fingerprinting!
+
+In Java and Dalvik binaries it is trivial to get this information.
+}
+
+\frame{
+\frametitle{Match with information from source code}
+A lot of open source code is reused unmodified, or with very few modifications. The LTSI project (Linux Foundation) showed that around 98\% of the Linux kernel code in Android handsets is not modified and changes are minimal (mostly driver code).
+
+Many other components are not changed at all. Consumer electronics mostly uses open source, and you can download \& process that code easily.
+}
+
+\frame{
+\frametitle{Extracting string constants and other identifiers}
+There are great open source tools that can help extracting identifiers
+
+\begin{itemize}
+\item \texttt{xgettext} for string constants
+\item \texttt{ctags} for function names and variable names
+\end{itemize}
+
+Results might not be 100\% perfect, but this works good enough.
+
+You can store these results with other metainformation (file names, package names, version names, licenses)
+}
+
+\frame{
+\frametitle{Match and report}
+Now it is almost trivial to find out what package was used in a binary
+
+\begin{enumerate}
+\item extract identifiers from a binary
+\item look up identifiers in a database containing identifiers extracted from source code
+\item statistics, matching, reporting
+\end{enumerate}
+
+This works \textit{extremely} well: using just string constants I can often tell you which version was used.
+}
+
+\frame{
+\frametitle{Binary Analysis Tool}
+Binary Analysis Tool (or: BAT) is a lightweight tool under an open source license that automates binary analysis.
+
+\begin{itemize}
+\item demystify binary analysis by codifying knowledge
+\item make it easier to have reproducable results
+\item common language for binary analysis
+\end{itemize}
+
+BAT is a generic framework for binary analysis. Until now focus of BAT was primarily on software license compliance.
+
+BAT has been in development since late 2009 and getting reasonably good.
+
+Funding came from Linux Foundation, NLnet Foundation, Cisco, as well as my customers.
+}
+
+\frame{
+\frametitle{Binary Analysis Tool result demo}
+Let's look at results of one scan of a (crappy) consumer electronics router.
+}
+
+\frame{
+\frametitle{Combining fingerprinting with metadata}
+Right now I mostly deal with license compliance issues, but there are other applications as well.
+
+Discovering security issues is by far the most important one (next talk, after the break).
+}
+
+\frame{
+\frametitle{BAT work that needs to be done}
+BAT is not perfect and there is work that needs to be done:
+
+\begin{itemize}
+\item more file system support (UBIFS)
+\item better GUI
+\item support for QNX ELF files
+\item detection of compiler optimization options
+\item detecting if ``broken \texttt{sstrip}'' was used
+\end{itemize}
+
+and there are many more research ideas I have. If you are still looking for RP1 or RP2 tasks, talk to me!
+}
+
+\frame{
+\frametitle{Questions?}
+}
+
+\frame{
+\frametitle{Contact}
+
+\begin{itemize}
+\item \url{armijn@tjaldur.nl}
+\item \url{http://www.tjaldur.nl/}
+\item Binary Analysis Tool: \url{http://www.binaryanalysis.org/}
+\end{itemize}
+}
+
+\end{document}

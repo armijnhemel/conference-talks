@@ -1,0 +1,1 @@
+These are the slides for a talk I gave for students at OS3.nl at one of the universities in Amsterdam (Uva), to inspire them to come and do a (short) research project for analysis of binary files.
