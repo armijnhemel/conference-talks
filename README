@@ -13,6 +13,7 @@ This repository contains slides of talks I have given over the years:
 * internal workshop LIP6 2012 (topic: binary scanning)
 * Automotive Linx Summit 2012 (topic: binary scanning)
 * LinuxCon Europe 2012 (topic: code cloning/similarity)
+* FSFE Legal & Licensing Workshop 2008 (topic: Identifying licensing issues)
 * FSFE Legal & Licensing Workshop 2009 (topic: Compliance engineering in the embedded industry)
 * FSFE Legal & Licensing Workshop 2011 (topic: (Re)introducing the Binary Analysis Tool)
 * FSFE Legal & Licensing Workshop 2013 (topic: ELF linking)
@@ -42,8 +43,9 @@ In some cases some sensitive information was removed and the PDF file was regene
 
 * opencompliancesummit2014/opencompliance2014.pdf
 
-In some cases the PDF file was regenerated:
+In some cases the PDF file was regenerated because the original PDF file was lost:
 
+* fsfe2008/fsfe-workshop.pdf
 * fsfe2009/ftf-legal-presentatie.pdf
 * androidbuilderssummit2011/androidsummit.pdf
 
