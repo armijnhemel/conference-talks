@@ -4,6 +4,7 @@ This repository contains slides of talks I have given over the years:
 * ELCE 2008 (topic: UPnP hacking)
 * NLUUG spring conference 2010 (topic: e-mail autoresponders)
 * Embedded Linux Conference 2010 (topic: binary scanning)
+* Android Builders Summit 2011 (topic: Android GPL license compliance)
 * EOLE 2011 (topic: GPL compliance)
 * LinuxCon Europe 2011 (topic: build tracing)
 * FOSSCon Korea 2011 (topic: Android GPL compliance)
@@ -43,6 +44,7 @@ In some cases some sensitive information was removed and the PDF file was regene
 In some cases the PDF file was regenerated:
 
 * fsfe2009/ftf-legal-presentatie.pdf
+* androidbuilderssummit2011/androidsummit.pdf
 
 All other files are the original slides.
 
