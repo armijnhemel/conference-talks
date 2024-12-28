@@ -1,3 +1,5 @@
+# List of talks
+
 This repository contains slides of talks I have given over the years:
 
 * FOSDEM 2008 (topic: UPnP hacking)
@@ -36,6 +38,8 @@ This repository contains slides of talks I have given over the years:
 * FSFE Legal & Licensing Workshop 2016 (topic: source code provenance)
 * OSADL Networking Day 2016 (topic: source code provenance)
 * FSFE Legal & Licensing Workshop 2017 (topic: ELF linking)
+* NLUUG spring conference 2024 (topic: having fun with ZIP)
+* OpenChain Korea legal and tooling workgroup, December 2024 (topic: build tracing)
 
 More talks will be added soon.
 
